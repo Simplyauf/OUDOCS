@@ -17,7 +17,11 @@ import {
   Chrome,
   Type,
   ClipboardList,
-  FileText
+  FileText,
+  X,
+  Maximize2,
+  Cpu,
+  Layers
 } from "lucide-react";
 import { useAuth } from "@/components/auth-provider";
 import { SessionSidebar } from "@/components/session-sidebar";
@@ -46,6 +50,10 @@ export default function Home() {
   const [guestName, setGuestName] = useState("");
   const [isCreatingProfile, setIsCreatingProfile] = useState(false);
   const [deviceFingerprint, setDeviceFingerprint] = useState<string>("");
+
+  // Landing Page Interactive States
+  const [highlightLogin, setHighlightLogin] = useState(false);
+  const [expandedImage, setExpandedImage] = useState<string | null>(null);
 
   useEffect(() => {
     getDeviceFingerprint().then(fp => setDeviceFingerprint(fp));
@@ -402,6 +410,13 @@ export default function Home() {
     }
   };
 
+  const triggerLoginHighlight = () => {
+    const input = document.getElementById("guest-name-input");
+    if (input) input.focus();
+    setHighlightLogin(true);
+    setTimeout(() => setHighlightLogin(false), 800);
+  };
+
   if (isAuthLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-zinc-50 dark:bg-[#09090b]">
@@ -430,6 +445,7 @@ export default function Home() {
         <div className="flex items-center gap-4">
           {profile ? (
             <div className="flex items-center gap-3">
+              {/* Logged In User Nav */}
               <div className="hidden sm:flex flex-col items-end mr-1">
                 <span className="text-sm font-bold text-zinc-800 dark:text-zinc-200 leading-tight">
                   {profile.full_name}
@@ -447,15 +463,13 @@ export default function Home() {
                 <Plus className="h-4 w-4" />
               </button>
               
-              {!isGuest && (
-                <button 
-                  onClick={signOut}
-                  className="p-2.5 rounded-xl bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 hover:bg-red-50 dark:hover:bg-red-950/30 hover:border-red-200 dark:hover:border-red-900/50 transition-all shadow-sm group active:scale-95"
-                  title="Sign Out"
-                >
-                  <LogOut className="h-4 w-4 text-zinc-400 group-hover:text-red-500 transition-colors" />
-                </button>
-              )}
+              <button 
+                onClick={signOut}
+                className="p-2.5 rounded-xl bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 hover:bg-red-50 dark:hover:bg-red-950/30 hover:border-red-200 dark:hover:border-red-900/50 transition-all shadow-sm group active:scale-95"
+                title="Sign Out"
+              >
+                <LogOut className="h-4 w-4 text-zinc-400 group-hover:text-red-500 transition-colors" />
+              </button>
 
               <div className="h-10 w-10 rounded-2xl bg-indigo-600 flex items-center justify-center text-white font-black text-sm shadow-lg shadow-indigo-500/30">
                 {profile.full_name.charAt(0).toUpperCase()}
@@ -466,7 +480,7 @@ export default function Home() {
       </header>
 
       <main className="flex-1 flex overflow-hidden relative">
-        {/* Sidebar integration */}
+        {/* Sidebar integration (Only when logged in) */}
         {profile && (
           <SessionSidebar 
             userId={profile.id}
@@ -480,508 +494,678 @@ export default function Home() {
           />
         )}
 
-        <div className="flex-1 flex flex-col overflow-hidden">
+        <div className="flex-1 flex flex-col overflow-hidden relative">
             <AnimatePresence mode="wait">
               
-              {/* STATE 1: GUEST LOGIN */}
+              {/* STATE 1: LANDING PAGE (Not Logged In) */}
               {!profile ? (
-                <motion.div 
-              key="login"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className="flex-1 flex flex-col items-center justify-center p-6 text-center"
-            >
-              <div className="max-w-md w-full space-y-10">
-                <div className="space-y-4">
-                  <motion.div
-                    animate={{ rotate: [0, 5, -5, 0] }}
-                    transition={{ repeat: Infinity, duration: 4 }}
-                    className="mx-auto w-20 h-20 rounded-3xl bg-indigo-600 flex items-center justify-center shadow-2xl shadow-indigo-500/40 mb-8"
-                  >
-                    <Sparkles className="h-10 w-10 text-white" />
-                  </motion.div>
-                  <h2 className="text-5xl font-black tracking-tighter leading-none">
-                    Start <span className="text-indigo-600">Analyzing.</span>
-                  </h2>
-                  <p className="text-zinc-500 dark:text-zinc-400 text-xl font-medium">
-                    Your personal intelligence layer over any document.
-                  </p>
-                </div>
-
-                <div className="space-y-6">
-                  <form onSubmit={handleGuestLogin} className="space-y-4">
-                    <div className="relative group">
-                      <User className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-zinc-400 group-focus-within:text-indigo-500 transition-colors" />
-                      <input 
-                        type="text" 
-                        placeholder="What should we call you?"
-                        value={guestName}
-                        onChange={(e) => setGuestName(e.target.value)}
-                        className="w-full rounded-[1.5rem] bg-white dark:bg-[#0c0c0e] border-2 border-zinc-100 dark:border-zinc-800 py-5 pl-14 pr-4 shadow-xl focus:outline-none focus:border-indigo-500/50 transition-all text-lg font-bold placeholder:text-zinc-400"
-                        autoFocus
-                      />
-                    </div>
-                    <button 
-                      type="submit"
-                      disabled={!guestName.trim() || isCreatingProfile}
-                      className="w-full flex items-center justify-center gap-3 rounded-[1.5rem] bg-zinc-900 dark:bg-white dark:text-zinc-900 py-5 font-black text-white shadow-2xl transition-all hover:bg-zinc-800 dark:hover:bg-zinc-100 active:scale-[0.98] disabled:opacity-50"
-                    >
-                      {isCreatingProfile ? (
-                        <Loader2 className="h-6 w-6 animate-spin" /> 
-                      ) : (
-                        <>
-                          Free Analysis <ArrowRight className="h-6 w-6" />
-                        </>
-                      )}
-                    </button>
-                  </form>
-
-                  <div className="relative">
-                    <div className="absolute inset-0 flex items-center">
-                      <span className="w-full border-t border-zinc-200 dark:border-zinc-800" />
-                    </div>
-                    <div className="relative flex justify-center text-xs uppercase">
-                      <span className="bg-zinc-50 dark:bg-[#09090b] px-4 text-zinc-500 font-black tracking-widest">or boost quota</span>
-                    </div>
-                  </div>
-
-                  <button 
-                    onClick={signInWithGoogle}
-                    className="w-full flex items-center justify-center gap-3 rounded-[1.5rem] bg-white border-2 border-zinc-200 dark:border-zinc-800 dark:bg-transparent py-5 font-black text-zinc-900 dark:text-white shadow-xl transition-all hover:border-indigo-500/50 active:scale-[0.98]"
-                  >
-                    <Chrome className="h-6 w-6 text-red-500" />
-                    Sign in with Google (+3 Free)
-                  </button>
-                </div>
-              </div>
-            </motion.div>
-          ) : !isUploaded ? (
-            /* STATE 2: UPLOAD (Scoped to Session) */
-            <motion.div 
-              key="upload"
-              initial={{ opacity: 0, scale: 0.98 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 1.02 }}
-              transition={{ duration: 0.4, ease: "circOut" }}
-              className="flex-1 flex flex-col items-center justify-center p-6 space-y-8"
-            >
-              {!activeSession ? (
-                 <div className="flex flex-col items-center">
-                    <Loader2 className="h-8 w-8 animate-spin text-zinc-400 mb-4" />
-                    <p className="text-zinc-500">Initializing Session...</p>
-                    <button onClick={() => profile && createNewSession(profile.id)} className="mt-4 text-xs text-indigo-500 underline">
-                      Click to retry
-                    </button>
-                 </div>
-              ) : (
-                <>
-                  {/* Mode Toggle */}
-                  <div className="flex p-1.5 bg-zinc-100 dark:bg-zinc-800/50 rounded-2xl border border-zinc-200 dark:border-zinc-700/50 shadow-inner">
-                    <button 
-                      onClick={() => setIngestMode("pdf")}
-                      className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold transition-all ${
-                        ingestMode === "pdf" 
-                        ? "bg-white dark:bg-zinc-700 text-indigo-600 dark:text-white shadow-md" 
-                        : "text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300"
-                      }`}
-                    >
-                      <Plus className="h-4 w-4" /> PDF Document
-                    </button>
-                    <button 
-                      onClick={() => setIngestMode("text")}
-                      className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold transition-all ${
-                        ingestMode === "text" 
-                        ? "bg-white dark:bg-zinc-700 text-indigo-600 dark:text-white shadow-md" 
-                        : "text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300"
-                      }`}
-                    >
-                      <Type className="h-4 w-4" /> Paste Text
-                    </button>
-                  </div>
-
+                <div className="relative w-full h-full flex flex-col overflow-y-auto custom-scrollbar">
+                    
+                  {/* TOP RIGHT LOGIN WIDGET (Desktop) */}
                   <motion.div 
-                    onDragOver={handleDragOver}
-                    onDragLeave={handleDragLeave}
-                    onDrop={handleDrop}
-                    className={`w-full max-w-2xl group relative space-y-8 rounded-[2.5rem] border-2 border-dashed p-12 text-center transition-all duration-500 ${
-                      isDragging 
-                      ? 'border-indigo-500 bg-indigo-50/30 dark:bg-indigo-500/5 scale-[1.01]' 
-                      : 'border-zinc-200 bg-white hover:border-zinc-300 dark:border-zinc-800 dark:bg-[#0c0c0e] hover:shadow-2xl hover:shadow-zinc-200/50 dark:hover:shadow-none'
-                    }`}
+                    animate={highlightLogin ? { x: [0, -10, 10, -10, 10, 0], scale: 1.05 } : {}}
+                    transition={{ duration: 0.5 }}
+                    className={`
+                        hidden lg:block absolute top-4 right-8 z-40 w-[340px] 
+                        bg-white/90 dark:bg-zinc-900/90 backdrop-blur-xl 
+                        border-2 ${highlightLogin ? 'border-indigo-500 shadow-[0_0_30px_rgba(99,102,241,0.3)]' : 'border-zinc-200 dark:border-zinc-800'} 
+                        p-6 rounded-3xl shadow-2xl transition-colors duration-300
+                    `}
                   >
-                    {ingestMode === "pdf" ? (
-                      <div className="space-y-8">
-                        <div className="space-y-6">
+                        <div className="space-y-5">
+                            <div className="space-y-1 text-center border-b border-zinc-100 dark:border-zinc-800 pb-4">
+                                <h3 className="font-black text-lg">Try It Free</h3>
+                                <p className="text-xs text-zinc-400 font-medium">No account needed for guest access</p>
+                            </div>
+
+                            <form onSubmit={handleGuestLogin} className="space-y-3">
+                                <div className="relative group">
+                                <User className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400 group-focus-within:text-indigo-500 transition-colors" />
+                                <input 
+                                    id="guest-name-input"
+                                    type="text" 
+                                    placeholder="What should we call you?"
+                                    value={guestName}
+                                    onChange={(e) => setGuestName(e.target.value)}
+                                    className="w-full rounded-xl bg-zinc-50 dark:bg-black border border-zinc-200 dark:border-zinc-800 py-3 pl-10 pr-4 text-sm font-bold focus:outline-none focus:border-indigo-500/50 transition-all placeholder:text-zinc-500"
+                                />
+                                </div>
+                                <button 
+                                type="submit"
+                                disabled={!guestName.trim() || isCreatingProfile}
+                                className="w-full flex items-center justify-center gap-2 rounded-xl bg-indigo-600 py-3 font-bold text-white shadow-lg shadow-indigo-500/20 transition-all hover:bg-indigo-700 active:scale-[0.98] disabled:opacity-50 text-sm"
+                                >
+                                {isCreatingProfile ? (
+                                    <Loader2 className="h-4 w-4 animate-spin" /> 
+                                ) : (
+                                    <>
+                                    Analyze My Documents <ArrowRight className="h-4 w-4" />
+                                    </>
+                                )}
+                                </button>
+                            </form>
+
+                            <div className="relative">
+                                <div className="absolute inset-0 flex items-center">
+                                <span className="w-full border-t border-zinc-200 dark:border-zinc-800" />
+                                </div>
+                                <div className="relative flex justify-center text-[10px] uppercase">
+                                <span className="bg-white/0 px-2 text-zinc-400 font-bold tracking-widest bg-white dark:bg-zinc-900">or</span>
+                                </div>
+                            </div>
+
+                            <button 
+                                onClick={signInWithGoogle}
+                                className="w-full flex items-center justify-center gap-2 rounded-xl bg-white border border-zinc-200 dark:border-zinc-800 dark:bg-zinc-950 py-3 font-bold text-zinc-900 dark:text-white shadow-sm transition-all hover:bg-zinc-50 dark:hover:bg-zinc-800 active:scale-[0.98] text-sm"
+                            >
+                                <Chrome className="h-4 w-4 text-red-500" />
+                                Sign in with Google
+                            </button>
+                        </div>
+                  </motion.div>
+
+                  {/* MAIN HERO CONTENT */}
+                  <div className="flex-1 flex flex-col items-center justify-center py-20 px-6">
+                    <motion.div 
+                        initial={{ opacity: 0, y: 30 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="flex flex-col lg:flex-row items-center gap-16 max-w-7xl w-full"
+                    >
+                        {/* Text Column */}
+                        <div className="flex-1 space-y-10 max-w-xl">
+                            <div className="space-y-6">
+                                <div className="flex flex-wrap items-center gap-2">
+                                    <motion.div 
+                                        initial={{ scale: 0.5, opacity: 0 }}
+                                        animate={{ scale: 1, opacity: 1 }}
+                                        transition={{ type: "spring", stiffness: 200 }}
+                                        className="w-12 h-12 rounded-2xl bg-indigo-600 flex items-center justify-center shadow-xl shadow-indigo-500/30"
+                                    >
+                                        <Sparkles className="h-6 w-6 text-white" />
+                                    </motion.div>
+                                    <div className="px-3 py-1.5 rounded-full bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 flex items-center gap-2">
+                                        <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+                                        <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-400">RAG Intelligence Active</span>
+                                    </div>
+                                </div>
+                                
+                                <h2 className="text-6xl md:text-7xl font-black tracking-tighter leading-[0.9]">
+                                    Start <br />
+                                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 to-violet-500">
+                                        Analyzing.
+                                    </span>
+                                </h2>
+
+                                <div className="space-y-4">
+                                    <p className="text-xl md:text-2xl font-medium text-zinc-500 dark:text-zinc-400 leading-relaxed">
+                                        Transform your <span className="text-zinc-900 dark:text-white font-bold decoration-indigo-500/30 underline decoration-4 underline-offset-4">meeting notes</span>, 
+                                        <span className="text-zinc-900 dark:text-white font-bold decoration-amber-500/30 underline decoration-4 underline-offset-4 mx-1.5">articles</span>, 
+                                        and <span className="text-zinc-900 dark:text-white font-bold decoration-green-500/30 underline decoration-4 underline-offset-4">research papers</span> into an interactive intelligence engine.
+                                    </p>
+                                   
+                                </div>
+                            </div>
+
+                            <div className="flex flex-col gap-4">
+                                {[
+                                    { icon: "Upload", text: "Upload PDFs, Docs, or Raw Text", color: "text-blue-500", bg: "bg-blue-500/10" },
+                                    { icon: "Sparkles", text: "Instant AI Summaries & Answers", color: "text-amber-500", bg: "bg-amber-500/10" },
+                                    { icon: "MessageSquare", text: "Deep Contextual Chat", color: "text-green-500", bg: "bg-green-500/10" }
+                                ].map((feature, i) => (
+                                    <div key={i} className="flex items-center gap-4 text-zinc-700 dark:text-zinc-200 font-bold text-base">
+                                        <div className={`h-10 w-10 rounded-xl ${feature.bg} ${feature.color} flex items-center justify-center shrink-0`}>
+                                            {feature.icon === "Upload" && <Upload className="h-5 w-5" />}
+                                            {feature.icon === "Sparkles" && <Sparkles className="h-5 w-5" />}
+                                            {feature.icon === "MessageSquare" && <MessageSquare className="h-5 w-5" />}
+                                        </div>
+                                        <span>{feature.text}</span>
+                                    </div>
+                                ))}
+                            </div>
+
+                            <div className="space-y-6">
+                                <button 
+                                    onClick={triggerLoginHighlight}
+                                    className="group flex items-center gap-3 px-8 py-4 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 rounded-full font-black text-lg shadow-xl hover:shadow-2xl hover:scale-105 active:scale-95 transition-all"
+                                >
+                                    Analyze My Documents
+                                    <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                                </button>
+
+                               
+                            </div>
+                        </div>
+
+                        {/* Image Column - Stacked View */}
+                        <div className="flex-1 w-full relative">
+                            <div className="relative aspect-[16/10] w-full">
+                                {/* Demo 1 (Bottom) */}
+                                <motion.div 
+                                    initial={{ opacity: 0, x: 20, y: 20 }}
+                                    animate={{ opacity: 1, x: 0, y: 0 }}
+                                    onClick={() => setExpandedImage("/demo.png")}
+                                    className="absolute top-12 left-12 right-0 bottom-0 z-0 cursor-pointer group"
+                                >
+                                    <div className="relative w-full h-full rounded-2xl overflow-hidden shadow-2xl border-2 border-zinc-100 dark:border-zinc-800 transition-all duration-500 group-hover:border-indigo-500/50 group-hover:scale-[1.02]">
+                                        <img 
+                                            src="/demo.png" 
+                                            alt="Viewer Preview" 
+                                            className="w-full h-full object-cover"
+                                        />
+                                        <div className="absolute inset-0 bg-black/20 group-hover:bg-black/0 transition-colors" />
+                                    </div>
+                                </motion.div>
+
+                                {/* Demo 2 (Top) */}
+                                <motion.div 
+                                    initial={{ opacity: 0, x: -20, y: -20 }}
+                                    animate={{ opacity: 1, x: 0, y: 0 }}
+                                    onClick={() => setExpandedImage("/demo2.jpeg")}
+                                    className="absolute top-0 left-0 right-12 bottom-12 z-10 cursor-pointer group"
+                                >
+                                    <div className="relative w-full h-full rounded-2xl overflow-hidden shadow-2xl border-4 border-white dark:border-zinc-700 transition-all duration-500 group-hover:border-indigo-500 group-hover:scale-[1.02] group-hover:-rotate-1">
+                                        <img 
+                                            src="/demo2.jpeg" 
+                                            alt="Chat Preview" 
+                                            className="w-full h-full object-cover"
+                                        />
+                                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
+                                            <div className="bg-white/20 backdrop-blur-md p-3 rounded-full text-white">
+                                                <Maximize2 className="h-6 w-6" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    {/* Feature Tag */}
+                                    <div className="absolute -bottom-4 left-6 px-4 py-2 bg-indigo-600 rounded-xl shadow-lg border border-white/20 text-white flex items-center gap-2">
+                                        <MessageSquare className="h-4 w-4" />
+                                        <span className="text-xs font-black uppercase tracking-widest">Q&A Moment</span>
+                                    </div>
+                                </motion.div>
+                            </div>
+
+                            {/* Glows */}
+                            <div className="absolute -top-20 -right-20 w-96 h-96 bg-indigo-500/10 rounded-full blur-[100px] -z-10" />
+                            <div className="absolute -bottom-20 -left-20 w-96 h-96 bg-violet-500/10 rounded-full blur-[100px] -z-10" />
+                        </div>
+                    </motion.div>
+                  </div>
+
+                  {/* MOBILE LOGIN FALLBACK */}
+                  <div className="lg:hidden p-6 pb-20 max-w-md mx-auto w-full">
+                       <div className="bg-white dark:bg-zinc-900 rounded-3xl p-6 shadow-xl border border-zinc-200 dark:border-zinc-800">
+                            <h3 className="font-black text-xl mb-6 text-center">Start Your Analysis</h3>
+                            <form onSubmit={handleGuestLogin} className="space-y-4">
+                                <input 
+                                    type="text" 
+                                    placeholder="What should we call you?"
+                                    value={guestName}
+                                    onChange={(e) => setGuestName(e.target.value)}
+                                    className="w-full rounded-xl bg-zinc-50 dark:bg-black border border-zinc-200 dark:border-zinc-800 py-4 px-4 text-base font-bold focus:outline-none focus:border-indigo-500/50"
+                                />
+                                <button type="submit" className="w-full bg-indigo-600 text-white rounded-xl py-4 font-bold shadow-lg">
+                                    Analyze My Documents
+                                </button>
+                            </form>
+                            <div className="my-6 text-center text-xs font-bold text-zinc-400 uppercase tracking-widest">or</div>
+                            <button onClick={signInWithGoogle} className="w-full border border-zinc-200 dark:border-zinc-800 rounded-xl py-4 font-bold flex items-center justify-center gap-2">
+                                <Chrome className="h-5 w-5 text-red-500" /> Sign in with Google
+                            </button>
+                       </div>
+                  </div>
+
+                  {/* EXPANDED IMAGE MODAL */}
+                  <AnimatePresence>
+                    {expandedImage && (
+                        <motion.div 
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="fixed inset-0 z-[60] bg-black/90 backdrop-blur-md flex items-center justify-center p-4 md:p-10"
+                            onClick={() => setExpandedImage(null)}
+                        >
+                            <motion.div 
+                                initial={{ scale: 0.9 }}
+                                animate={{ scale: 1 }}
+                                exit={{ scale: 0.9 }}
+                                className="relative max-w-7xl w-full max-h-full overflow-hidden rounded-3xl shadow-2xl"
+                            >
+                                <img src={expandedImage} alt="Full Preview" className="w-full h-full object-contain" />
+                                <button className="absolute top-4 right-4 p-3 bg-black/50 hover:bg-black/70 rounded-full text-white backdrop-blur-md transition-colors">
+                                    <X className="h-6 w-6" />
+                                </button>
+                            </motion.div>
+                        </motion.div>
+                    )}
+                  </AnimatePresence>
+
+                </div>
+              ) : !isUploaded ? (
+                /* STATE 2: UPLOAD (Scoped to Session) */
+                <motion.div 
+                  key="upload"
+                  initial={{ opacity: 0, scale: 0.98 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 1.02 }}
+                  transition={{ duration: 0.4, ease: "circOut" }}
+                  className="flex-1 flex flex-col items-center justify-center p-6 space-y-8 overflow-y-auto custom-scrollbar"
+                >
+                  {!activeSession ? (
+                     <div className="flex flex-col items-center">
+                        <Loader2 className="h-8 w-8 animate-spin text-zinc-400 mb-4" />
+                        <p className="text-zinc-500">Initializing Session...</p>
+                        <button onClick={() => profile && createNewSession(profile.id)} className="mt-4 text-xs text-indigo-500 underline">
+                          Click to retry
+                        </button>
+                     </div>
+                  ) : (
+                    <>
+                      {/* Mode Toggle */}
+                      <div className="flex p-1.5 bg-zinc-100 dark:bg-zinc-800/50 rounded-2xl border border-zinc-200 dark:border-zinc-700/50 shadow-inner">
+                        <button 
+                          onClick={() => setIngestMode("pdf")}
+                          className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold transition-all ${
+                            ingestMode === "pdf" 
+                            ? "bg-white dark:bg-zinc-700 text-indigo-600 dark:text-white shadow-md" 
+                            : "text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300"
+                          }`}
+                        >
+                          <Plus className="h-4 w-4" /> PDF Document
+                        </button>
+                        <button 
+                          onClick={() => setIngestMode("text")}
+                          className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold transition-all ${
+                            ingestMode === "text" 
+                            ? "bg-white dark:bg-zinc-700 text-indigo-600 dark:text-white shadow-md" 
+                            : "text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300"
+                          }`}
+                        >
+                          <Type className="h-4 w-4" /> Paste Text
+                        </button>
+                      </div>
+
+                      <motion.div 
+                        onDragOver={handleDragOver}
+                        onDragLeave={handleDragLeave}
+                        onDrop={handleDrop}
+                        className={`w-full max-w-2xl group relative space-y-8 rounded-[2.5rem] border-2 border-dashed p-12 text-center transition-all duration-500 ${
+                          isDragging 
+                          ? 'border-indigo-500 bg-indigo-50/30 dark:bg-indigo-500/5 scale-[1.01]' 
+                          : 'border-zinc-200 bg-white hover:border-zinc-300 dark:border-zinc-800 dark:bg-[#0c0c0e] hover:shadow-2xl hover:shadow-zinc-200/50 dark:hover:shadow-none'
+                        }`}
+                      >
+                        {ingestMode === "pdf" ? (
+                          <div className="space-y-8">
+                            <div className="space-y-6">
+                              <motion.div 
+                                animate={isDragging ? { y: -10, scale: 1.1 } : { y: 0 }}
+                                className={`mx-auto flex h-20 w-20 items-center justify-center rounded-3xl transition-all duration-500 shadow-xl ${
+                                  isDragging 
+                                  ? 'bg-indigo-600 text-white' 
+                                  : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-400 group-hover:text-indigo-500 dark:group-hover:text-indigo-400'
+                                }`}
+                              >
+                                <Upload className="h-8 w-8" />
+                              </motion.div>
+                              <div className="space-y-2">
+                                <h2 className="text-3xl font-extrabold tracking-tight">Drop your PDF</h2>
+                                <p className="text-zinc-500 dark:text-zinc-400 font-medium">Max size 15MB</p>
+                                <p className="text-[10px] text-zinc-400 dark:text-zinc-500 uppercase tracking-widest font-black mt-1">PDF, DOCX, DOC, TXT, MD, RTF</p>
+                              </div>
+                            </div>
+                            
+                            <div className="flex flex-col items-center gap-6">
+                              <label className="cursor-pointer w-full">
+                                <span className="inline-flex w-full items-center justify-center gap-3 rounded-2xl bg-zinc-900 border border-zinc-800 px-8 py-4 font-bold text-white shadow-xl hover:bg-zinc-800 transition-all active:scale-95 text-sm uppercase tracking-widest">
+                                  {file ? file.name : "Select Document (Max 15MB)"}
+                                </span>
+                                <input type="file" accept=".pdf,.docx,.doc,.txt,.md,.rtf" onChange={handleFileChange} className="sr-only" />
+                              </label>
+                              
+                              {file && !isUploading && (
+                                <motion.button
+                                  initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+                                  onClick={handleUpload}
+                                  className="w-full max-w-xs rounded-2xl bg-indigo-600 py-4 font-bold text-white shadow-xl shadow-indigo-500/25 transition-all hover:bg-indigo-700 active:scale-95 uppercase tracking-widest text-sm"
+                                >
+                                  Process PDF
+                                </motion.button>
+                              )}
+
+                              {isUploading && (
+                                <div className="flex flex-col items-center gap-4 w-full px-12">
+                                  <div className="w-full h-2 bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden shadow-inner">
+                                    <motion.div 
+                                      initial={{ width: 0 }}
+                                      animate={{ width: `${ingestProgress}%` }}
+                                      className="h-full bg-gradient-to-r from-indigo-500 to-violet-600 shadow-[0_0_15px_rgba(99,102,241,0.5)]"
+                                    />
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <Loader2 className="h-4 w-4 animate-spin text-indigo-500" />
+                                    <span className="font-black text-indigo-500 uppercase tracking-widest text-[10px]">
+                                      {ingestProgress < 30 ? "Extracting Pages..." : 
+                                       ingestProgress < 70 ? "Generating Knowledge Embeddings..." : 
+                                       "Saving to Brain..."} {Math.round(ingestProgress)}%
+                                    </span>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="space-y-6">
+                            <div className="space-y-4">
+                                <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-3xl bg-zinc-100 dark:bg-zinc-800 text-zinc-400 shadow-xl">
+                                    <ClipboardList className="h-8 w-8" />
+                                </div>
+                                <h2 className="text-3xl font-extrabold tracking-tight">Paste anything</h2>
+                            </div>
+                            
+                            <textarea 
+                              placeholder="Paste meeting notes, articles, or any text here..."
+                              value={pastedText}
+                              onChange={(e) => setPastedText(e.target.value)}
+                              className="w-full min-h-[200px] rounded-2xl bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 p-6 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 text-lg font-medium resize-none custom-scrollbar"
+                            />
+                            <div className="flex justify-between pr-2">
+                               <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest">~20 Pages Max</span>
+                               <span className={`text-[10px] font-black uppercase tracking-widest ${pastedText.length > 50000 ? "text-red-500" : "text-zinc-400"}`}>
+                                 Characters: {pastedText.length.toLocaleString()} / 50,000
+                               </span>
+                            </div>
+
+                            <button
+                              disabled={!pastedText.trim() || isIngesting}
+                              onClick={handleIngestText}
+                              className="w-full rounded-2xl bg-indigo-600 py-4 font-bold text-white shadow-xl shadow-indigo-500/25 transition-all hover:bg-indigo-700 active:scale-95 uppercase tracking-widest text-sm disabled:opacity-50"
+                            >
+                              {isIngesting ? (
+                                <div className="flex flex-col items-center gap-4 w-full">
+                                    <div className="w-full h-2 bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden shadow-inner">
+                                        <motion.div 
+                                        initial={{ width: 0 }}
+                                        animate={{ width: `${ingestProgress}%` }}
+                                        className="h-full bg-gradient-to-r from-indigo-500 to-violet-600"
+                                        />
+                                    </div>
+                                    <span className="font-black text-indigo-500 uppercase tracking-widest text-[10px]">Processing Knowledge... {Math.round(ingestProgress)}%</span>
+                                </div>
+                              ) : "Process Raw Text"}
+                            </button>
+                          </div>
+                        )}
+                      </motion.div>
+                    </>
+                  )}
+                </motion.div>
+              ) : (
+                /* STATE 3: CHAT */
+                <motion.div 
+                  key="chat"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.6 }}
+                  className="flex-1 flex flex-col lg:flex-row w-full overflow-hidden border-t border-zinc-100 dark:border-zinc-800/50"
+                >
+                  {/* Left Pane: Document Viewer */}
+                  <div className="w-full lg:w-1/2 border-b lg:border-b-0 lg:border-r border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/10 flex flex-col overflow-hidden relative">
+                    <div className="p-4 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between bg-white dark:bg-zinc-950 z-10">
+                      <div className="flex items-center gap-2">
+                        <div className="h-8 w-8 rounded-lg bg-indigo-50 dark:bg-indigo-500/10 flex items-center justify-center text-indigo-600">
+                          {activeDataInfo?.type === 'TEXT' ? <Type className="h-4 w-4" /> : <FileText className="h-4 w-4" />}
+                        </div>
+                        <div className="min-w-0">
+                          {(() => {
+                            const meta = typeof activeSession?.metadata === 'string' 
+                              ? (activeSession.metadata ? JSON.parse(activeSession.metadata) : {}) 
+                              : (activeSession?.metadata || {});
+                            const type = meta?.type?.toUpperCase();
+                            const isPDF = type === 'PDF' || activeSession?.documents?.[0]?.metadata?.source_type === 'pdf';
+                            
+                            return (
+                              <>
+                                <h3 className="text-xs font-bold text-zinc-900 dark:text-zinc-100 truncate max-w-[150px] sm:max-w-[200px]">
+                                  {activeSession?.title || "Active Document"}
+                                </h3>
+                                <p className="text-[9px] font-black text-indigo-500 uppercase tracking-widest leading-none mt-0.5">
+                                  {isPDF ? `${meta?.pageCount || '?'} Pages Loaded` : 
+                                   (type === 'DOCX' || type === 'DOC') ? `${meta?.wordCount || '?'} Words • ${meta?.pageEstimate || '?'} Pages` :
+                                   (type === 'TXT' || type === 'MD' || type === 'RTF') ? `${meta?.wordCount || '?'} Words` :
+                                   type === 'TEXT' ? `${meta?.charCount || '?'} Chars Indexed` : 'Workspace Ready'}
+                                </p>
+                              </>
+                            );
+                          })()}
+                        </div>
+                      </div>
+                      <button 
+                        onClick={() => setShowSourcePanel(true)}
+                        className="p-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-400 transition-all hover:text-indigo-500"
+                        title="Full Raw Source"
+                      >
+                        <ArrowRight className="h-4 w-4" />
+                      </button>
+                    </div>
+                    
+                        {/* Document View: PDF or Index Parts */}
+                        <div className="flex-1 overflow-hidden relative bg-white dark:bg-zinc-950">
+                          {(() => {
+                            const meta = typeof activeSession?.metadata === 'string' 
+                              ? (activeSession.metadata ? JSON.parse(activeSession.metadata) : {}) 
+                              : (activeSession?.metadata || {});
+                            
+                            // Primary check: Session metadata type
+                            let isPDF = meta?.type?.toUpperCase() === 'PDF';
+                            let storagePath = meta?.storagePath;
+
+                            // Secondary fallback: Check document metadata if primary is missing
+                            if (!isPDF && activeSession?.documents && activeSession.documents.length > 0) {
+                               const firstDoc = activeSession.documents[0];
+                               const docMeta = typeof firstDoc.metadata === 'string' ? JSON.parse(firstDoc.metadata) : firstDoc.metadata;
+                               if (docMeta?.source_type === 'pdf') {
+                                  isPDF = true;
+                                  // Approximate storage path if missing
+                                  if (!storagePath) {
+                                    storagePath = `${activeSession.id}-${docMeta.source_name?.replace(/[^a-zA-Z0-9.]/g, '_')}`;
+                                  }
+                               }
+                            }
+
+                            if (isPDF && storagePath) {
+                              return (
+                                <iframe 
+                                  src={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/documents/${storagePath}#toolbar=0&navpanes=0&scrollbar=1`}
+                                  className="w-full h-full border-none"
+                                  title="PDF Viewer"
+                                  onError={() => toast.error("Failed to load PDF iframe.")}
+                                />
+                              );
+                            }
+                            
+                            return (
+                              <div className="h-full overflow-y-auto p-8 lg:p-12 space-y-6 custom-scrollbar bg-white/50 dark:bg-black/5">
+                                 <div className="max-w-2xl mx-auto">
+                                    <div className="space-y-6 text-zinc-800 dark:text-zinc-200 leading-relaxed text-sm font-medium whitespace-pre-wrap">
+                                      {activeSession?.documents && activeSession.documents.length > 0 
+                                        ? activeSession.documents.map(d => d.content).join("\n\n") 
+                                        : "Synchronizing intelligence layers..."}
+                                    </div>
+                                 </div>
+                              </div>
+                            );
+                          })()}
+                        </div>
+                  </div>
+
+                  {/* Right Pane: Chat interface */}
+                  <div className="flex-1 flex flex-col bg-white dark:bg-zinc-950 relative">
+                    <div 
+                      ref={scrollRef}
+                      className="flex-1 overflow-y-auto space-y-8 p-6 lg:p-10 custom-scrollbar"
+                    >
+                      <AnimatePresence mode="popLayout">
+                        {messages.length === 0 && (
                           <motion.div 
-                            animate={isDragging ? { y: -10, scale: 1.1 } : { y: 0 }}
-                            className={`mx-auto flex h-20 w-20 items-center justify-center rounded-3xl transition-all duration-500 shadow-xl ${
-                              isDragging 
-                              ? 'bg-indigo-600 text-white' 
-                              : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-400 group-hover:text-indigo-500 dark:group-hover:text-indigo-400'
-                            }`}
+                            initial={{ opacity: 0, scale: 0.9 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            transition={{ delay: 0.4 }}
+                            className="flex flex-col items-center justify-center h-full text-center space-y-6 opacity-30"
                           >
-                            <Upload className="h-8 w-8" />
+                            <div className="h-20 w-20 rounded-3xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 flex items-center justify-center">
+                              <MessageSquare className="h-8 w-8 text-indigo-500" />
+                            </div>
+                            <div className="space-y-2">
+                              <h3 className="text-xl font-bold tracking-tight">Intelligence Ready</h3>
+                              <p className="text-zinc-500 text-sm font-medium">Ask anything about the document on the left.</p>
+                            </div>
                           </motion.div>
-                          <div className="space-y-2">
-                            <h2 className="text-3xl font-extrabold tracking-tight">Drop your PDF</h2>
-                            <p className="text-zinc-500 dark:text-zinc-400 font-medium">Max size 15MB</p>
-                            <p className="text-[10px] text-zinc-400 dark:text-zinc-500 uppercase tracking-widest font-black mt-1">PDF, DOCX, DOC, TXT, MD, RTF</p>
+                        )}
+
+                        {messages.map((m) => (
+                          <motion.div 
+                            key={m.id} 
+                            initial={{ opacity: 0, y: 10, scale: 0.98 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                          >
+                            <div className={`max-w-[90%] rounded-2xl px-5 py-3.5 shadow-sm text-base leading-relaxed ${
+                              m.role === 'user' 
+                              ? 'bg-zinc-900 dark:bg-zinc-700 text-white rounded-tr-none' 
+                              : 'bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 rounded-tl-none'
+                            }`}>
+                              <div className={`prose prose-sm max-w-none ${
+                                m.role === 'user' 
+                                ? 'prose-invert text-white' 
+                                : 'text-zinc-900 dark:text-zinc-100 dark:prose-invert'
+                              }`}>
+                                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                  {m.content}
+                                </ReactMarkdown>
+                              </div>
+                            </div>
+                          </motion.div>
+                        ))}
+
+                        {isThinking && (
+                          <motion.div 
+                            key="thinking"
+                            initial={{ opacity: 0, scale: 0.8 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            className="flex justify-start"
+                          >
+                            <div className="bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl rounded-tl-none px-5 py-3.5 flex gap-2 items-center">
+                              <div className="h-1.5 w-1.5 rounded-full bg-indigo-500 animate-bounce" style={{ animationDelay: '0ms' }} />
+                              <div className="h-1.5 w-1.5 rounded-full bg-indigo-500 animate-bounce" style={{ animationDelay: '200ms' }} />
+                              <div className="h-1.5 w-1.5 rounded-full bg-indigo-500 animate-bounce" style={{ animationDelay: '400ms' }} />
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+
+                    <div className="p-6 border-t border-zinc-100 dark:border-zinc-900 bg-zinc-50/50 dark:bg-black/20">
+                      <form 
+                        onSubmit={handleSend}
+                        className="relative group max-w-2xl mx-auto"
+                      >
+                        <input
+                          type="text"
+                          value={input}
+                          onChange={(e) => setInput(e.target.value)}
+                          placeholder="Ask a question..."
+                          className="w-full rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 py-4 pl-6 pr-14 shadow-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all font-medium text-base"
+                        />
+                        <button
+                          type="submit"
+                          disabled={!input.trim() || isThinking}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 p-3 rounded-xl bg-indigo-600 text-white disabled:opacity-50 transition-all hover:bg-indigo-700 active:scale-95"
+                        >
+                          {isThinking ? (
+                            <Loader2 className="h-5 w-5 animate-spin" />
+                          ) : (
+                            <ChevronUp className="h-5 w-5" strokeWidth={3} />
+                          )}
+                        </button>
+                      </form>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Source Content Preview Overlay */}
+            <AnimatePresence>
+              {showSourcePanel && (
+                <>
+                  <motion.div 
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    onClick={() => setShowSourcePanel(false)}
+                    className="absolute inset-0 bg-zinc-950/40 backdrop-blur-sm z-50 cursor-pointer"
+                  />
+                  <motion.div 
+                    initial={{ x: "100%" }}
+                    animate={{ x: 0 }}
+                    exit={{ x: "100%" }}
+                    transition={{ type: "spring", damping: 25, stiffness: 200 }}
+                    className="absolute right-0 top-0 bottom-0 w-full max-w-md bg-white dark:bg-[#0c0c0e] border-l border-zinc-200 dark:border-zinc-800 z-[60] shadow-2xl flex flex-col"
+                  >
+                    <div className="p-6 border-b border-zinc-100 dark:border-zinc-800 flex items-center justify-between">
+                      <div className="flex flex-col">
+                        <h3 className="text-lg font-black tracking-tight">Source Material</h3>
+                        <p className="text-xs text-zinc-500">Full context available in this session</p>
+                      </div>
+                      <button 
+                        onClick={() => setShowSourcePanel(false)}
+                        className="p-2 rounded-xl bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-all"
+                      >
+                        <ArrowRight className="h-5 w-5" />
+                      </button>
+                    </div>
+                    <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-6 custom-scrollbar">
+                      <div className="space-y-4">
+                        <div className="flex items-center gap-4">
+                          <div className="h-12 w-12 rounded-2xl bg-indigo-50 dark:bg-indigo-500/10 flex items-center justify-center text-indigo-600">
+                            {activeDataInfo?.type === 'PDF' ? <Upload className="h-6 w-6" /> : <ClipboardList className="h-6 w-6" />}
+                          </div>
+                          <div>
+                            <p className="text-sm font-black uppercase tracking-widest text-indigo-500 mb-0.5">Source Identity</p>
+                            <p className="font-bold text-xl dark:text-zinc-100 leading-tight">
+                               {activeDataInfo?.name || (activeSession?.documents?.[0]?.metadata?.source_name) || "Connected Knowledge"}
+                            </p>
                           </div>
                         </div>
                         
-                        <div className="flex flex-col items-center gap-6">
-                          <label className="cursor-pointer w-full">
-                            <span className="inline-flex w-full items-center justify-center gap-3 rounded-2xl bg-zinc-900 border border-zinc-800 px-8 py-4 font-bold text-white shadow-xl hover:bg-zinc-800 transition-all active:scale-95 text-sm uppercase tracking-widest">
-                              {file ? file.name : "Select Document (Max 15MB)"}
-                            </span>
-                            <input type="file" accept=".pdf,.docx,.doc,.txt,.md,.rtf" onChange={handleFileChange} className="sr-only" />
-                          </label>
-                          
-                          {file && !isUploading && (
-                            <motion.button
-                              initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-                              onClick={handleUpload}
-                              className="w-full max-w-xs rounded-2xl bg-indigo-600 py-4 font-bold text-white shadow-xl shadow-indigo-500/25 transition-all hover:bg-indigo-700 active:scale-95 uppercase tracking-widest text-sm"
-                            >
-                              Process PDF
-                            </motion.button>
-                          )}
-
-                          {isUploading && (
-                            <div className="flex flex-col items-center gap-4 w-full px-12">
-                              <div className="w-full h-2 bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden shadow-inner">
-                                <motion.div 
-                                  initial={{ width: 0 }}
-                                  animate={{ width: `${ingestProgress}%` }}
-                                  className="h-full bg-gradient-to-r from-indigo-500 to-violet-600 shadow-[0_0_15px_rgba(99,102,241,0.5)]"
-                                />
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <Loader2 className="h-4 w-4 animate-spin text-indigo-500" />
-                                <span className="font-black text-indigo-500 uppercase tracking-widest text-[10px]">
-                                  {ingestProgress < 30 ? "Extracting Pages..." : 
-                                   ingestProgress < 70 ? "Generating Knowledge Embeddings..." : 
-                                   "Saving to Brain..."} {Math.round(ingestProgress)}%
-                                </span>
-                              </div>
-                            </div>
-                          )}
+                        <div className="rounded-2xl bg-indigo-50 dark:bg-indigo-500/5 border border-indigo-100 dark:border-indigo-500/10 p-6">
+                           <p className="text-sm text-zinc-600 dark:text-zinc-300 leading-relaxed font-medium">
+                             "To provide precise answers, this document has been broken down and indexed into <span className="text-indigo-500 font-bold">{activeDataInfo?.chunks || activeSession?.documents?.length || 0} searchable parts</span>."
+                           </p>
                         </div>
-                      </div>
-                    ) : (
-                      <div className="space-y-6">
+
                         <div className="space-y-4">
-                            <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-3xl bg-zinc-100 dark:bg-zinc-800 text-zinc-400 shadow-xl">
-                                <ClipboardList className="h-8 w-8" />
-                            </div>
-                            <h2 className="text-3xl font-extrabold tracking-tight">Paste anything</h2>
+                           <p className="text-xs font-black uppercase tracking-widest text-zinc-400">Original Documentation Text</p>
+                           <div className="rounded-2xl border border-dashed border-zinc-200 dark:border-zinc-800 p-6 text-sm text-zinc-500 dark:text-zinc-400 font-mono max-h-[400px] overflow-y-auto custom-scrollbar whitespace-pre-wrap">
+                              {activeSession?.documents?.map(d => d.content).join("\n\n") || pastedText || "Synchronizing content..."}
+                           </div>
                         </div>
-                        
-                        <textarea 
-                          placeholder="Paste meeting notes, articles, or any text here..."
-                          value={pastedText}
-                          onChange={(e) => setPastedText(e.target.value)}
-                          className="w-full min-h-[200px] rounded-2xl bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 p-6 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 text-lg font-medium resize-none custom-scrollbar"
-                        />
-                        <div className="flex justify-between pr-2">
-                           <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest">~20 Pages Max</span>
-                           <span className={`text-[10px] font-black uppercase tracking-widest ${pastedText.length > 50000 ? "text-red-500" : "text-zinc-400"}`}>
-                             Characters: {pastedText.length.toLocaleString()} / 50,000
-                           </span>
-                        </div>
-
-                        <button
-                          disabled={!pastedText.trim() || isIngesting}
-                          onClick={handleIngestText}
-                          className="w-full rounded-2xl bg-indigo-600 py-4 font-bold text-white shadow-xl shadow-indigo-500/25 transition-all hover:bg-indigo-700 active:scale-95 uppercase tracking-widest text-sm disabled:opacity-50"
-                        >
-                          {isIngesting ? (
-                            <div className="flex flex-col items-center gap-4 w-full">
-                                <div className="w-full h-2 bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden shadow-inner">
-                                    <motion.div 
-                                    initial={{ width: 0 }}
-                                    animate={{ width: `${ingestProgress}%` }}
-                                    className="h-full bg-gradient-to-r from-indigo-500 to-violet-600"
-                                    />
-                                </div>
-                                <span className="font-black text-indigo-500 uppercase tracking-widest text-[10px]">Processing Knowledge... {Math.round(ingestProgress)}%</span>
-                            </div>
-                          ) : "Process Raw Text"}
-                        </button>
                       </div>
-                    )}
+                    </div>
+                    <div className="p-6 border-t border-zinc-100 dark:border-zinc-800 bg-zinc-50/50 dark:bg-[#09090b]/50">
+                      <button 
+                        onClick={() => setShowSourcePanel(false)}
+                        className="w-full py-4 rounded-xl bg-zinc-900 dark:bg-white dark:text-zinc-900 text-white font-black text-sm uppercase tracking-widest shadow-xl active:scale-95 transition-all"
+                      >
+                        Close Preview
+                      </button>
+                    </div>
                   </motion.div>
                 </>
               )}
-            </motion.div>
-          ) : (
-            /* STATE 3: CHAT */
-            <motion.div 
-              key="chat"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.6 }}
-              className="flex-1 flex flex-col lg:flex-row w-full overflow-hidden border-t border-zinc-100 dark:border-zinc-800/50"
-            >
-              {/* Left Pane: Document Viewer */}
-              <div className="w-full lg:w-1/2 border-b lg:border-b-0 lg:border-r border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/10 flex flex-col overflow-hidden relative">
-                <div className="p-4 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between bg-white dark:bg-zinc-950 z-10">
-                  <div className="flex items-center gap-2">
-                    <div className="h-8 w-8 rounded-lg bg-indigo-50 dark:bg-indigo-500/10 flex items-center justify-center text-indigo-600">
-                      {activeDataInfo?.type === 'TEXT' ? <Type className="h-4 w-4" /> : <FileText className="h-4 w-4" />}
-                    </div>
-                    <div className="min-w-0">
-                      {(() => {
-                        const meta = typeof activeSession?.metadata === 'string' 
-                          ? (activeSession.metadata ? JSON.parse(activeSession.metadata) : {}) 
-                          : (activeSession?.metadata || {});
-                        const type = meta?.type?.toUpperCase();
-                        const isPDF = type === 'PDF' || activeSession?.documents?.[0]?.metadata?.source_type === 'pdf';
-                        
-                        return (
-                          <>
-                            <h3 className="text-xs font-bold text-zinc-900 dark:text-zinc-100 truncate max-w-[150px] sm:max-w-[200px]">
-                              {activeSession?.title || "Active Document"}
-                            </h3>
-                            <p className="text-[9px] font-black text-indigo-500 uppercase tracking-widest leading-none mt-0.5">
-                              {isPDF ? `${meta?.pageCount || '?'} Pages Loaded` : 
-                               (type === 'DOCX' || type === 'DOC') ? `${meta?.wordCount || '?'} Words • ${meta?.pageEstimate || '?'} Pages` :
-                               (type === 'TXT' || type === 'MD' || type === 'RTF') ? `${meta?.wordCount || '?'} Words` :
-                               type === 'TEXT' ? `${meta?.charCount || '?'} Chars Indexed` : 'Workspace Ready'}
-                            </p>
-                          </>
-                        );
-                      })()}
-                    </div>
-                  </div>
-                  <button 
-                    onClick={() => setShowSourcePanel(true)}
-                    className="p-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-400 transition-all hover:text-indigo-500"
-                    title="Full Raw Source"
-                  >
-                    <ArrowRight className="h-4 w-4" />
-                  </button>
-                </div>
-                
-                    {/* Document View: PDF or Index Parts */}
-                    <div className="flex-1 overflow-hidden relative bg-white dark:bg-zinc-950">
-                      {(() => {
-                        const meta = typeof activeSession?.metadata === 'string' 
-                          ? (activeSession.metadata ? JSON.parse(activeSession.metadata) : {}) 
-                          : (activeSession?.metadata || {});
-                        
-                        // Primary check: Session metadata type
-                        let isPDF = meta?.type?.toUpperCase() === 'PDF';
-                        let storagePath = meta?.storagePath;
-
-                        // Secondary fallback: Check document metadata if primary is missing
-                        if (!isPDF && activeSession?.documents && activeSession.documents.length > 0) {
-                           const firstDoc = activeSession.documents[0];
-                           const docMeta = typeof firstDoc.metadata === 'string' ? JSON.parse(firstDoc.metadata) : firstDoc.metadata;
-                           if (docMeta?.source_type === 'pdf') {
-                              isPDF = true;
-                              // Approximate storage path if missing
-                              if (!storagePath) {
-                                storagePath = `${activeSession.id}-${docMeta.source_name?.replace(/[^a-zA-Z0-9.]/g, '_')}`;
-                              }
-                           }
-                        }
-
-                        if (isPDF && storagePath) {
-                          return (
-                            <iframe 
-                              src={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/documents/${storagePath}#toolbar=0&navpanes=0&scrollbar=1`}
-                              className="w-full h-full border-none"
-                              title="PDF Viewer"
-                              onError={() => toast.error("Failed to load PDF iframe.")}
-                            />
-                          );
-                        }
-                        
-                        return (
-                          <div className="h-full overflow-y-auto p-8 lg:p-12 space-y-6 custom-scrollbar bg-white/50 dark:bg-black/5">
-                             <div className="max-w-2xl mx-auto">
-                                <div className="space-y-6 text-zinc-800 dark:text-zinc-200 leading-relaxed text-sm font-medium whitespace-pre-wrap">
-                                  {activeSession?.documents && activeSession.documents.length > 0 
-                                    ? activeSession.documents.map(d => d.content).join("\n\n") 
-                                    : "Synchronizing intelligence layers..."}
-                                </div>
-                             </div>
-                          </div>
-                        );
-                      })()}
-                    </div>
-              </div>
-
-              {/* Right Pane: Chat interface */}
-              <div className="flex-1 flex flex-col bg-white dark:bg-zinc-950 relative">
-                <div 
-                  ref={scrollRef}
-                  className="flex-1 overflow-y-auto space-y-8 p-6 lg:p-10 custom-scrollbar"
-                >
-                  <AnimatePresence mode="popLayout">
-                    {messages.length === 0 && (
-                      <motion.div 
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ delay: 0.4 }}
-                        className="flex flex-col items-center justify-center h-full text-center space-y-6 opacity-30"
-                      >
-                        <div className="h-20 w-20 rounded-3xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 flex items-center justify-center">
-                          <MessageSquare className="h-8 w-8 text-indigo-500" />
-                        </div>
-                        <div className="space-y-2">
-                          <h3 className="text-xl font-bold tracking-tight">Intelligence Ready</h3>
-                          <p className="text-zinc-500 text-sm font-medium">Ask anything about the document on the left.</p>
-                        </div>
-                      </motion.div>
-                    )}
-
-                    {messages.map((m) => (
-                      <motion.div 
-                        key={m.id} 
-                        initial={{ opacity: 0, y: 10, scale: 0.98 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                      >
-                        <div className={`max-w-[90%] rounded-2xl px-5 py-3.5 shadow-sm text-base leading-relaxed ${
-                          m.role === 'user' 
-                          ? 'bg-zinc-900 dark:bg-zinc-700 text-white rounded-tr-none' 
-                          : 'bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 rounded-tl-none'
-                        }`}>
-                          <div className={`prose prose-sm max-w-none ${
-                            m.role === 'user' 
-                            ? 'prose-invert text-white' 
-                            : 'text-zinc-900 dark:text-zinc-100 dark:prose-invert'
-                          }`}>
-                            <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                              {m.content}
-                            </ReactMarkdown>
-                          </div>
-                        </div>
-                      </motion.div>
-                    ))}
-
-                    {isThinking && (
-                      <motion.div 
-                        key="thinking"
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        className="flex justify-start"
-                      >
-                        <div className="bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl rounded-tl-none px-5 py-3.5 flex gap-2 items-center">
-                          <div className="h-1.5 w-1.5 rounded-full bg-indigo-500 animate-bounce" style={{ animationDelay: '0ms' }} />
-                          <div className="h-1.5 w-1.5 rounded-full bg-indigo-500 animate-bounce" style={{ animationDelay: '200ms' }} />
-                          <div className="h-1.5 w-1.5 rounded-full bg-indigo-500 animate-bounce" style={{ animationDelay: '400ms' }} />
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-
-                <div className="p-6 border-t border-zinc-100 dark:border-zinc-900 bg-zinc-50/50 dark:bg-black/20">
-                  <form 
-                    onSubmit={handleSend}
-                    className="relative group max-w-2xl mx-auto"
-                  >
-                    <input
-                      type="text"
-                      value={input}
-                      onChange={(e) => setInput(e.target.value)}
-                      placeholder="Ask a question..."
-                      className="w-full rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 py-4 pl-6 pr-14 shadow-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all font-medium text-base"
-                    />
-                    <button
-                      type="submit"
-                      disabled={!input.trim() || isThinking}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 p-3 rounded-xl bg-indigo-600 text-white disabled:opacity-50 transition-all hover:bg-indigo-700 active:scale-95"
-                    >
-                      {isThinking ? (
-                        <Loader2 className="h-5 w-5 animate-spin" />
-                      ) : (
-                        <ChevronUp className="h-5 w-5" strokeWidth={3} />
-                      )}
-                    </button>
-                  </form>
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Source Content Preview Overlay */}
-        <AnimatePresence>
-          {showSourcePanel && (
-            <>
-              <motion.div 
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                onClick={() => setShowSourcePanel(false)}
-                className="absolute inset-0 bg-zinc-950/40 backdrop-blur-sm z-50 cursor-pointer"
-              />
-              <motion.div 
-                initial={{ x: "100%" }}
-                animate={{ x: 0 }}
-                exit={{ x: "100%" }}
-                transition={{ type: "spring", damping: 25, stiffness: 200 }}
-                className="absolute right-0 top-0 bottom-0 w-full max-w-md bg-white dark:bg-[#0c0c0e] border-l border-zinc-200 dark:border-zinc-800 z-[60] shadow-2xl flex flex-col"
-              >
-                <div className="p-6 border-b border-zinc-100 dark:border-zinc-800 flex items-center justify-between">
-                  <div className="flex flex-col">
-                    <h3 className="text-lg font-black tracking-tight">Source Material</h3>
-                    <p className="text-xs text-zinc-500">Full context available in this session</p>
-                  </div>
-                  <button 
-                    onClick={() => setShowSourcePanel(false)}
-                    className="p-2 rounded-xl bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-all"
-                  >
-                    <ArrowRight className="h-5 w-5" />
-                  </button>
-                </div>
-                <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-6 custom-scrollbar">
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-4">
-                      <div className="h-12 w-12 rounded-2xl bg-indigo-50 dark:bg-indigo-500/10 flex items-center justify-center text-indigo-600">
-                        {activeDataInfo?.type === 'PDF' ? <Upload className="h-6 w-6" /> : <ClipboardList className="h-6 w-6" />}
-                      </div>
-                      <div>
-                        <p className="text-sm font-black uppercase tracking-widest text-indigo-500 mb-0.5">Source Identity</p>
-                        <p className="font-bold text-xl dark:text-zinc-100 leading-tight">
-                           {activeDataInfo?.name || (activeSession?.documents?.[0]?.metadata?.source_name) || "Connected Knowledge"}
-                        </p>
-                      </div>
-                    </div>
-                    
-                    <div className="rounded-2xl bg-indigo-50 dark:bg-indigo-500/5 border border-indigo-100 dark:border-indigo-500/10 p-6">
-                       <p className="text-sm text-zinc-600 dark:text-zinc-300 leading-relaxed font-medium">
-                         "To provide precise answers, this document has been broken down and indexed into <span className="text-indigo-500 font-bold">{activeDataInfo?.chunks || activeSession?.documents?.length || 0} searchable parts</span>."
-                       </p>
-                    </div>
-
-                    <div className="space-y-4">
-                       <p className="text-xs font-black uppercase tracking-widest text-zinc-400">Original Documentation Text</p>
-                       <div className="rounded-2xl border border-dashed border-zinc-200 dark:border-zinc-800 p-6 text-sm text-zinc-500 dark:text-zinc-400 font-mono max-h-[400px] overflow-y-auto custom-scrollbar whitespace-pre-wrap">
-                          {activeSession?.documents?.map(d => d.content).join("\n\n") || pastedText || "Synchronizing content..."}
-                       </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="p-6 border-t border-zinc-100 dark:border-zinc-800 bg-zinc-50/50 dark:bg-[#09090b]/50">
-                  <button 
-                    onClick={() => setShowSourcePanel(false)}
-                    className="w-full py-4 rounded-xl bg-zinc-900 dark:bg-white dark:text-zinc-900 text-white font-black text-sm uppercase tracking-widest shadow-xl active:scale-95 transition-all"
-                  >
-                    Close Preview
-                  </button>
-                </div>
-              </motion.div>
-            </>
-          )}
-        </AnimatePresence>
-      </div>
-    </main>
+            </AnimatePresence>
+        </div>
+      </main>
       
       <style jsx global>{`
         .custom-scrollbar::-webkit-scrollbar {

@@ -8,6 +8,9 @@
     "start": "next start",
     "lint": "eslint"
   },
+  "overrides": {
+    "openai": "$openai"
+  },
   "dependencies": {
     "@fingerprintjs/fingerprintjs": "^5.0.1",
     "@langchain/community": "^0.3.30",
