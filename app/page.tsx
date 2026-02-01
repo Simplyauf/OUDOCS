@@ -499,17 +499,17 @@ export default function Home() {
               
               {/* STATE 1: LANDING PAGE (Not Logged In) */}
               {!profile ? (
-                <div className="relative w-full h-full flex flex-col overflow-y-auto custom-scrollbar">
+                <div className="relative w-full h-full flex flex-col overflow-x-hidden overflow-y-auto custom-scrollbar">
                     
-                  {/* TOP RIGHT LOGIN WIDGET (Desktop) */}
+                  {/* TOP RIGHT LOGIN WIDGET (Desktop/Tablet) */}
                   <motion.div 
                     animate={highlightLogin ? { x: [0, -10, 10, -10, 10, 0], scale: 1.05 } : {}}
                     transition={{ duration: 0.5 }}
                     className={`
-                        hidden lg:block absolute top-4 right-8 z-40 w-[340px] 
+                        hidden md:block absolute top-4 right-4 lg:right-8 z-40 w-[300px] lg:w-[340px] 
                         bg-white/90 dark:bg-zinc-900/90 backdrop-blur-xl 
                         border-2 ${highlightLogin ? 'border-indigo-500 shadow-[0_0_30px_rgba(99,102,241,0.3)]' : 'border-zinc-200 dark:border-zinc-800'} 
-                        p-6 rounded-3xl shadow-2xl transition-colors duration-300
+                        p-5 lg:p-6 rounded-3xl shadow-2xl transition-colors duration-300
                     `}
                   >
                         <div className="space-y-5">
@@ -565,16 +565,16 @@ export default function Home() {
                   </motion.div>
 
                   {/* MAIN HERO CONTENT */}
-                  <div className="flex-1 flex flex-col items-center justify-center py-20 px-6">
+                  <div className="flex-1 flex flex-col items-center justify-center py-12 md:py-20 px-6">
                     <motion.div 
                         initial={{ opacity: 0, y: 30 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="flex flex-col lg:flex-row items-center gap-16 max-w-7xl w-full"
+                        className="flex flex-col md:flex-row items-center gap-12 lg:gap-16 max-w-7xl w-full"
                     >
                         {/* Text Column */}
-                        <div className="flex-1 space-y-10 max-w-xl">
+                        <div className="flex-1 space-y-8 lg:space-y-10 max-w-xl text-center md:text-left">
                             <div className="space-y-6">
-                                <div className="flex flex-wrap items-center gap-2">
+                                <div className="flex flex-wrap items-center justify-center md:justify-start gap-2">
                                     <motion.div 
                                         initial={{ scale: 0.5, opacity: 0 }}
                                         animate={{ scale: 1, opacity: 1 }}
@@ -589,62 +589,79 @@ export default function Home() {
                                     </div>
                                 </div>
                                 
-                                <h2 className="text-6xl md:text-7xl font-black tracking-tighter leading-[0.9]">
+                                <h1 className="text-5xl lg:text-7xl font-black tracking-tighter leading-[0.9]">
                                     Start <br />
                                     <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 to-violet-500">
                                         Analyzing.
                                     </span>
-                                </h2>
+                                </h1>
 
                                 <div className="space-y-4">
-                                    <p className="text-xl md:text-2xl font-medium text-zinc-500 dark:text-zinc-400 leading-relaxed">
+                                    <p className="text-lg lg:text-2xl font-medium text-zinc-500 dark:text-zinc-400 leading-relaxed max-w-md mx-auto md:mx-0">
                                         Transform your <span className="text-zinc-900 dark:text-white font-bold decoration-indigo-500/30 underline decoration-4 underline-offset-4">meeting notes</span>, 
-                                        <span className="text-zinc-900 dark:text-white font-bold decoration-amber-500/30 underline decoration-4 underline-offset-4 mx-1.5">articles</span>, 
+                                        <span className="text-zinc-900 dark:text-white font-bold decoration-amber-500/30 underline decoration-4 underline-offset-4 mx-1">articles</span>, 
                                         and <span className="text-zinc-900 dark:text-white font-bold decoration-green-500/30 underline decoration-4 underline-offset-4">research papers</span> into an interactive intelligence engine.
                                     </p>
-                                   
+                                    <p className="text-xs lg:text-sm font-bold text-zinc-400 dark:text-zinc-500 flex items-center justify-center md:justify-start gap-2 border-none md:border-l-2 md:border-indigo-500/30 md:pl-4">
+                                        Powered by RAG for accurate, source-grounded answers.
+                                    </p>
                                 </div>
                             </div>
 
-                            <div className="flex flex-col gap-4">
+                            <div className="flex flex-col gap-4 max-w-sm mx-auto md:mx-0">
                                 {[
                                     { icon: "Upload", text: "Upload PDFs, Docs, or Raw Text", color: "text-blue-500", bg: "bg-blue-500/10" },
                                     { icon: "Sparkles", text: "Instant AI Summaries & Answers", color: "text-amber-500", bg: "bg-amber-500/10" },
                                     { icon: "MessageSquare", text: "Deep Contextual Chat", color: "text-green-500", bg: "bg-green-500/10" }
                                 ].map((feature, i) => (
-                                    <div key={i} className="flex items-center gap-4 text-zinc-700 dark:text-zinc-200 font-bold text-base">
-                                        <div className={`h-10 w-10 rounded-xl ${feature.bg} ${feature.color} flex items-center justify-center shrink-0`}>
-                                            {feature.icon === "Upload" && <Upload className="h-5 w-5" />}
-                                            {feature.icon === "Sparkles" && <Sparkles className="h-5 w-5" />}
-                                            {feature.icon === "MessageSquare" && <MessageSquare className="h-5 w-5" />}
+                                    <div key={i} className="flex items-center gap-4 text-zinc-700 dark:text-zinc-200 font-bold text-sm lg:text-base">
+                                        <div className={`h-8 lg:h-10 w-8 lg:w-10 rounded-xl ${feature.bg} ${feature.color} flex items-center justify-center shrink-0`}>
+                                            {feature.icon === "Upload" && <Upload className="h-4 lg:h-5 w-4 lg:w-5" />}
+                                            {feature.icon === "Sparkles" && <Sparkles className="h-4 lg:h-5 w-4 lg:w-5" />}
+                                            {feature.icon === "MessageSquare" && <MessageSquare className="h-4 lg:h-5 w-4 lg:w-5" />}
                                         </div>
-                                        <span>{feature.text}</span>
+                                        <span className="text-left">{feature.text}</span>
                                     </div>
                                 ))}
                             </div>
 
                             <div className="space-y-6">
                                 <button 
-                                    onClick={triggerLoginHighlight}
-                                    className="group flex items-center gap-3 px-8 py-4 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 rounded-full font-black text-lg shadow-xl hover:shadow-2xl hover:scale-105 active:scale-95 transition-all"
+                                    onClick={() => {
+                                        if (window.innerWidth < 768) {
+                                            document.getElementById("mobile-form")?.scrollIntoView({ behavior: "smooth" });
+                                        } else {
+                                            triggerLoginHighlight();
+                                        }
+                                    }}
+                                    className="group flex items-center justify-center md:justify-start gap-3 px-8 py-4 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 rounded-full font-black text-lg shadow-xl hover:shadow-2xl hover:scale-105 active:scale-95 transition-all mx-auto md:mx-0 w-full md:w-auto"
                                 >
                                     Analyze My Documents
                                     <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
                                 </button>
 
-                               
+                                <div className="flex items-center justify-center md:justify-start gap-6 pt-2">
+                                    <div className="flex items-center gap-2">
+                                        <Cpu className="h-4 w-4 text-zinc-400" />
+                                        <span className="text-[9px] lg:text-[10px] font-black uppercase tracking-widest text-zinc-400">LangChain v0.3</span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <Layers className="h-4 w-4 text-zinc-400" />
+                                        <span className="text-[9px] lg:text-[10px] font-black uppercase tracking-widest text-zinc-400">Vector Embeddings</span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
                         {/* Image Column - Stacked View */}
-                        <div className="flex-1 w-full relative">
+                        <div className="flex-1 w-full relative max-w-2xl overflow-hidden md:overflow-visible">
                             <div className="relative aspect-[16/10] w-full">
                                 {/* Demo 1 (Bottom) */}
                                 <motion.div 
                                     initial={{ opacity: 0, x: 20, y: 20 }}
                                     animate={{ opacity: 1, x: 0, y: 0 }}
                                     onClick={() => setExpandedImage("/demo.png")}
-                                    className="absolute top-12 left-12 right-0 bottom-0 z-0 cursor-pointer group"
+                                    className="absolute top-8 md:top-12 left-8 md:left-12 right-0 bottom-0 z-0 cursor-pointer group"
                                 >
                                     <div className="relative w-full h-full rounded-2xl overflow-hidden shadow-2xl border-2 border-zinc-100 dark:border-zinc-800 transition-all duration-500 group-hover:border-indigo-500/50 group-hover:scale-[1.02]">
                                         <img 
@@ -661,7 +678,7 @@ export default function Home() {
                                     initial={{ opacity: 0, x: -20, y: -20 }}
                                     animate={{ opacity: 1, x: 0, y: 0 }}
                                     onClick={() => setExpandedImage("/demo2.jpeg")}
-                                    className="absolute top-0 left-0 right-12 bottom-12 z-10 cursor-pointer group"
+                                    className="absolute top-0 left-0 right-8 md:right-12 bottom-8 md:bottom-12 z-10 cursor-pointer group"
                                 >
                                     <div className="relative w-full h-full rounded-2xl overflow-hidden shadow-2xl border-4 border-white dark:border-zinc-700 transition-all duration-500 group-hover:border-indigo-500 group-hover:scale-[1.02] group-hover:-rotate-1">
                                         <img 
@@ -677,38 +694,41 @@ export default function Home() {
                                     </div>
                                     
                                     {/* Feature Tag */}
-                                    <div className="absolute -bottom-4 left-6 px-4 py-2 bg-indigo-600 rounded-xl shadow-lg border border-white/20 text-white flex items-center gap-2">
-                                        <MessageSquare className="h-4 w-4" />
-                                        <span className="text-xs font-black uppercase tracking-widest">Q&A Moment</span>
+                                    <div className="absolute -bottom-3 md:-bottom-4 left-4 md:left-6 px-3 md:px-4 py-1.5 md:py-2 bg-indigo-600 rounded-lg md:rounded-xl shadow-lg border border-white/20 text-white flex items-center gap-2">
+                                        <MessageSquare className="h-3 md:h-4 w-3 md:w-4" />
+                                        <span className="text-[10px] md:text-xs font-black uppercase tracking-widest">Q&A Moment</span>
                                     </div>
                                 </motion.div>
                             </div>
 
                             {/* Glows */}
-                            <div className="absolute -top-20 -right-20 w-96 h-96 bg-indigo-500/10 rounded-full blur-[100px] -z-10" />
-                            <div className="absolute -bottom-20 -left-20 w-96 h-96 bg-violet-500/10 rounded-full blur-[100px] -z-10" />
+                            <div className="absolute -top-10 md:-top-20 -right-10 md:-right-20 w-48 md:w-96 h-48 md:h-96 bg-indigo-500/10 rounded-full blur-[60px] md:blur-[100px] -z-10" />
+                            <div className="absolute -bottom-10 md:-bottom-20 -left-10 md:-left-20 w-48 md:w-96 h-48 md:h-96 bg-violet-500/10 rounded-full blur-[60px] md:blur-[100px] -z-10" />
                         </div>
                     </motion.div>
                   </div>
 
                   {/* MOBILE LOGIN FALLBACK */}
-                  <div className="lg:hidden p-6 pb-20 max-w-md mx-auto w-full">
+                  <div id="mobile-form" className="md:hidden p-6 pb-24 max-w-md mx-auto w-full">
                        <div className="bg-white dark:bg-zinc-900 rounded-3xl p-6 shadow-xl border border-zinc-200 dark:border-zinc-800">
                             <h3 className="font-black text-xl mb-6 text-center">Start Your Analysis</h3>
                             <form onSubmit={handleGuestLogin} className="space-y-4">
-                                <input 
-                                    type="text" 
-                                    placeholder="What should we call you?"
-                                    value={guestName}
-                                    onChange={(e) => setGuestName(e.target.value)}
-                                    className="w-full rounded-xl bg-zinc-50 dark:bg-black border border-zinc-200 dark:border-zinc-800 py-4 px-4 text-base font-bold focus:outline-none focus:border-indigo-500/50"
-                                />
-                                <button type="submit" className="w-full bg-indigo-600 text-white rounded-xl py-4 font-bold shadow-lg">
+                                <div className="relative group">
+                                    <User className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
+                                    <input 
+                                        type="text" 
+                                        placeholder="What should we call you?"
+                                        value={guestName}
+                                        onChange={(e) => setGuestName(e.target.value)}
+                                        className="w-full rounded-xl bg-zinc-50 dark:bg-black border border-zinc-200 dark:border-zinc-800 py-4 pl-10 pr-4 text-base font-bold focus:outline-none focus:border-indigo-500/50"
+                                    />
+                                </div>
+                                <button type="submit" className="w-full bg-indigo-600 text-white rounded-xl py-4 font-bold shadow-lg active:scale-95 transition-transform">
                                     Analyze My Documents
                                 </button>
                             </form>
                             <div className="my-6 text-center text-xs font-bold text-zinc-400 uppercase tracking-widest">or</div>
-                            <button onClick={signInWithGoogle} className="w-full border border-zinc-200 dark:border-zinc-800 rounded-xl py-4 font-bold flex items-center justify-center gap-2">
+                            <button onClick={signInWithGoogle} className="w-full border border-zinc-200 dark:border-zinc-800 rounded-xl py-4 font-bold flex items-center justify-center gap-2 active:scale-95 transition-transform">
                                 <Chrome className="h-5 w-5 text-red-500" /> Sign in with Google
                             </button>
                        </div>
@@ -721,13 +741,13 @@ export default function Home() {
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
-                            className="fixed inset-0 z-[60] bg-black/90 backdrop-blur-md flex items-center justify-center p-4 md:p-10"
+                            className="fixed inset-0 z-[60] bg-black/95 backdrop-blur-md flex items-center justify-center p-4 md:p-10"
                             onClick={() => setExpandedImage(null)}
                         >
                             <motion.div 
-                                initial={{ scale: 0.9 }}
-                                animate={{ scale: 1 }}
-                                exit={{ scale: 0.9 }}
+                                initial={{ scale: 0.9, opacity: 0 }}
+                                animate={{ scale: 1, opacity: 1 }}
+                                exit={{ scale: 0.9, opacity: 0 }}
                                 className="relative max-w-7xl w-full max-h-full overflow-hidden rounded-3xl shadow-2xl"
                             >
                                 <img src={expandedImage} alt="Full Preview" className="w-full h-full object-contain" />
