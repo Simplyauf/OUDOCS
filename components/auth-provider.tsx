@@ -23,25 +23,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const supabase = createClient();
 
-  useEffect(() => {
-    // 1. Initial Session Check
-    const checkUser = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      handleSession(session);
-    };
-
-    checkUser();
-
-    // 2. Listen for Auth Changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        handleSession(session);
-      }
-    );
-
-    return () => subscription.unsubscribe();
-  }, []);
-
   const handleSession = async (session: Session | null) => {
     if (session?.user) {
       // Check for guestId before we clear it
@@ -92,6 +73,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
     setIsLoading(false);
   };
+
+  useEffect(() => {
+    // 1. Initial Session Check
+    const checkUser = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      handleSession(session);
+    };
+
+    checkUser();
+
+    // 2. Listen for Auth Changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        handleSession(session);
+      }
+    );
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   const signInWithGoogle = async () => {
     await supabase.auth.signInWithOAuth({

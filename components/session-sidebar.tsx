@@ -35,6 +35,7 @@ interface SessionSidebarProps {
   onNewSession: () => void;
   activeDataInfo: { chunks: number; type: string; name?: string } | null;
   refreshTrigger?: number;
+  isCreating?: boolean;
 }
 
 export function SessionSidebar({ 
@@ -45,8 +46,9 @@ export function SessionSidebar({
   isGuest,
   signInWithGoogle,
   activeDataInfo,
-  refreshTrigger
-}: SessionSidebarProps & { isGuest?: boolean; signInWithGoogle?: () => void; activeDataInfo: { chunks: number; type: string } | null; refreshTrigger?: number }) {
+  refreshTrigger,
+  isCreating = false
+}: SessionSidebarProps & { isGuest?: boolean; signInWithGoogle?: () => void; activeDataInfo: { chunks: number; type: string } | null; refreshTrigger?: number; isCreating?: boolean }) {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isOpen, setIsOpen] = useState(true);
@@ -115,9 +117,10 @@ export function SessionSidebar({
             <div className="p-4">
               <button 
                 onClick={onNewSession}
-                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 hover:opacity-90 transition-all font-bold text-sm"
+                disabled={isCreating}
+                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 hover:opacity-90 transition-all font-bold text-sm disabled:opacity-70 disabled:cursor-not-allowed"
               >
-                <Plus className="h-4 w-4" />
+                {isCreating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
                 New Workspace
               </button>
             </div>

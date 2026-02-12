@@ -49,6 +49,7 @@ export default function Home() {
   const [activeSession, setActiveSession] = useState<Session | null>(null);
   const [guestName, setGuestName] = useState("");
   const [isCreatingProfile, setIsCreatingProfile] = useState(false);
+  const [isCreatingSession, setIsCreatingSession] = useState(false);
   const [deviceFingerprint, setDeviceFingerprint] = useState<string>("");
 
   // Landing Page Interactive States
@@ -165,6 +166,8 @@ export default function Home() {
       localStorage.setItem("oudocs_user_id", guestProfile.id);
       localStorage.setItem("oudocs_user_name", guestProfile.full_name);
       
+      toast.success(`Welcome, ${guestProfile.full_name}!`);
+      
     } catch (error) {
       console.error("Login failed", error);
     } finally {
@@ -173,6 +176,9 @@ export default function Home() {
   };
 
   const createNewSession = async (userId: string) => {
+    if (isCreatingSession) return;
+    setIsCreatingSession(true);
+    
     try {
       const res = await fetch("/api/session", {
         method: "POST",
@@ -187,6 +193,7 @@ export default function Home() {
         setFile(null);
         setMessages([]);
         setActiveDataInfo(null);
+        toast.success("New workspace created!");
       } else {
         const error = await res.json();
         if (res.status === 403) {
@@ -198,6 +205,8 @@ export default function Home() {
     } catch (error: any) {
       console.error("Session creation failed", error);
       toast.error("Failed to create session. Please try again.");
+    } finally {
+      setIsCreatingSession(false);
     }
   };
 
@@ -457,10 +466,11 @@ export default function Home() {
               
               <button 
                 onClick={() => profile && createNewSession(profile.id)}
-                className="p-2.5 rounded-xl bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-700 transition-all shadow-sm active:scale-95"
+                disabled={isCreatingSession}
+                className="p-2.5 rounded-xl bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-700 transition-all shadow-sm active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                 title="New Session"
               >
-                <Plus className="h-4 w-4" />
+                {isCreatingSession ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
               </button>
               
               <button 
@@ -491,6 +501,7 @@ export default function Home() {
             signInWithGoogle={signInWithGoogle}
             activeDataInfo={activeDataInfo}
             refreshTrigger={refreshTrigger}
+            isCreating={isCreatingSession}
           />
         )}
 
@@ -723,9 +734,20 @@ export default function Home() {
                                         className="w-full rounded-xl bg-zinc-50 dark:bg-black border border-zinc-200 dark:border-zinc-800 py-4 pl-10 pr-4 text-base font-bold focus:outline-none focus:border-indigo-500/50"
                                     />
                                 </div>
-                                <button type="submit" className="w-full bg-indigo-600 text-white rounded-xl py-4 font-bold shadow-lg active:scale-95 transition-transform">
-                                    Analyze My Documents
-                                </button>
+                                    <button 
+                                        type="submit" 
+                                        disabled={!guestName.trim() || isCreatingProfile}
+                                        className="w-full flex items-center justify-center gap-2 bg-indigo-600 text-white rounded-xl py-4 font-bold shadow-lg active:scale-95 transition-transform disabled:opacity-70 disabled:active:scale-100"
+                                    >
+                                        {isCreatingProfile ? (
+                                            <>
+                                                <Loader2 className="h-5 w-5 animate-spin" />
+                                                Creating Profile...
+                                            </>
+                                        ) : (
+                                            "Analyze My Documents"
+                                        )}
+                                    </button>
                             </form>
                             <div className="my-6 text-center text-xs font-bold text-zinc-400 uppercase tracking-widest">or</div>
                             <button onClick={signInWithGoogle} className="w-full border border-zinc-200 dark:border-zinc-800 rounded-xl py-4 font-bold flex items-center justify-center gap-2 active:scale-95 transition-transform">
@@ -790,7 +812,7 @@ export default function Home() {
                             : "text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300"
                           }`}
                         >
-                          <Plus className="h-4 w-4" /> PDF Document
+                          <Plus className="h-4 w-4" />  Documents
                         </button>
                         <button 
                           onClick={() => setIngestMode("text")}

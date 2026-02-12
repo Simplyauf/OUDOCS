@@ -85,10 +85,11 @@ export async function processDocument(buffer: Buffer, fileType: string, sessionI
 
     // Add sessionId to metadata for every chunk
     if (sessionId) {
-      docs.forEach(doc => {
+      docs.forEach((doc, index) => {
         doc.metadata.session_id = sessionId;
         doc.metadata.source_name = fileName;
         doc.metadata.source_type = fileType.toLowerCase();
+        doc.metadata.chunk_index = index; // Global Context Indexing
       });
     }
 
@@ -140,10 +141,11 @@ export async function processPDF(buffer: Buffer, sessionId?: string, fileName: s
 
     // Add sessionId to metadata for every chunk explicitly
     if (sessionId) {
-      docs.forEach(doc => {
+      docs.forEach((doc, index) => {
         doc.metadata.session_id = sessionId;
         doc.metadata.source_name = fileName;
         doc.metadata.source_type = 'pdf';
+        doc.metadata.chunk_index = index; // Global Context Indexing
       });
     }
 
@@ -182,10 +184,11 @@ export async function processText(text: string, sessionId?: string) {
 
 
     if (sessionId) {
-      docs.forEach(doc => {
+      docs.forEach((doc, index) => {
         doc.metadata.session_id = sessionId;
         doc.metadata.source_name = "Pasted Text";
         doc.metadata.source_type = "text";
+        doc.metadata.chunk_index = index; // Global Context Indexing
       });
     }
 
@@ -262,11 +265,39 @@ Standalone Question:`;
   // Use the refined searchParam instead of the raw question
   const results = await vectorStore.similaritySearch(searchParam, 15, filter);
 
-  if (results.length === 0) {
+  // --- GLOBAL CONTEXT INJECTION ---
+  // Always fetch the first 3 chunks (Title, Intro, Abstract) to ensure high-level context
+  let globalContextDocs: Document[] = [];
+  if (sessionId) {
+      try {
+        const { data: globalChunks, error } = await client
+            .from('documents')
+            .select('content, metadata')
+            .eq('metadata->>session_id', sessionId)
+            .lt('metadata->>chunk_index', 3) // Get first 3 chunks (0, 1, 2)
+            .order('metadata->>chunk_index', { ascending: true });
+
+        if (globalChunks && !error) {
+            globalContextDocs = globalChunks.map(chunk => new Document({
+                pageContent: chunk.content,
+                metadata: chunk.metadata
+            }));
+        }
+      } catch (e) {
+          console.warn("Global context fetch failed (legacy docs?):", e);
+      }
+  }
+
+  // Combine & Deduplicate
+  const allDocs = [...globalContextDocs, ...results];
+  const uniqueDocs = Array.from(new Set(allDocs.map(d => d.pageContent)))
+    .map(content => allDocs.find(d => d.pageContent === content)!);
+
+  if (uniqueDocs.length === 0) {
     return null; 
   }
 
-  const context = results.map((r: Document) => r.pageContent).join("\n\n");
+  const context = uniqueDocs.map((r: Document) => r.pageContent).join("\n\n");
   return context;
 }
 
