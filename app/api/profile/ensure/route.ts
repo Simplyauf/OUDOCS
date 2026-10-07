@@ -96,6 +96,6 @@ export async function POST(req: NextRequest) {
     if (authFailure) return authFailure;
 
     console.error("Profile Ensure Error:", error);
-    return NextResponse.json({ error: "Internal Server Error", message: error.message }, { status: 500 });
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }

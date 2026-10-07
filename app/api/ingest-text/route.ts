@@ -60,7 +60,7 @@ export async function POST(req: NextRequest) {
 
     console.error("Text ingest error:", error);
     return NextResponse.json(
-      { error: "Internal Server Error", message: error.message },
+      { error: "Internal Server Error" },
       { status: 500 }
     );
   }

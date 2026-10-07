@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
 
     console.error("Session Create Error:", error);
     return NextResponse.json(
-      { error: "Internal Server Error", message: error.message },
+      { error: "Internal Server Error" },
       { status: 500 }
     );
   }
@@ -65,7 +65,7 @@ export async function GET() {
       .order("created_at", { foreignTable: "messages", ascending: true });
 
     if (error) {
-      return NextResponse.json({ error: "Fetch error", message: error.message }, { status: 500 });
+      return NextResponse.json({ error: "Fetch error" }, { status: 500 });
     }
 
     return NextResponse.json(data);
@@ -75,7 +75,7 @@ export async function GET() {
 
     console.error("Session Fetch Error:", error);
     return NextResponse.json(
-      { error: "Internal Server Error", message: error.message },
+      { error: "Internal Server Error" },
       { status: 500 }
     );
   }
@@ -99,6 +99,6 @@ export async function DELETE(req: NextRequest) {
     if (authFailure) return authFailure;
 
     console.error("Delete Error:", error);
-    return NextResponse.json({ error: "Delete error", message: error.message }, { status: 500 });
+    return NextResponse.json({ error: "Delete error" }, { status: 500 });
   }
 }

@@ -29,7 +29,20 @@ export class AuthError extends Error {
 function guestSecret(): string {
   const secret = process.env.GUEST_COOKIE_SECRET;
   if (!secret || secret.length < 32) {
-    throw new Error("GUEST_COOKIE_SECRET must be set to at least 32 characters");
+    console.error(
+      "[auth] GUEST_COOKIE_SECRET unusable:",
+      JSON.stringify({
+        present: secret !== undefined,
+        length: secret?.length ?? 0,
+        required: 32,
+        vercelEnv: process.env.VERCEL_ENV ?? "unset",
+        sawOtherServerVars: {
+          SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY !== undefined,
+          GOOGLE_API_KEY: process.env.GOOGLE_API_KEY !== undefined,
+        },
+      })
+    );
+    throw new Error("Guest authentication is not configured");
   }
   return secret;
 }

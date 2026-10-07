@@ -76,7 +76,7 @@ ${question}
     console.error("Chat error details:", error);
     const status = error.status === 429 || error.message?.includes("429") ? 429 : 500;
     return NextResponse.json(
-      { error: status === 429 ? "Rate Limit Exceeded" : "Internal Server Error", message: error.message }, 
+      { error: status === 429 ? "Rate Limit Exceeded" : "Internal Server Error" },
       { status: status }
     );
   }
