@@ -26,8 +26,12 @@ export class AuthError extends Error {
   }
 }
 
+function readRuntimeEnv(name: string): string | undefined {
+  return process.env[name];
+}
+
 function guestSecret(): string {
-  const secret = process.env.GUEST_COOKIE_SECRET;
+  const secret = readRuntimeEnv("GUEST_COOKIE_SECRET");
   if (!secret || secret.length < 32) {
     console.error(
       "[auth] GUEST_COOKIE_SECRET unusable:",
@@ -37,8 +41,8 @@ function guestSecret(): string {
         required: 32,
         vercelEnv: process.env.VERCEL_ENV ?? "unset",
         sawOtherServerVars: {
-          SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY !== undefined,
-          GOOGLE_API_KEY: process.env.GOOGLE_API_KEY !== undefined,
+          SUPABASE_SERVICE_ROLE_KEY: readRuntimeEnv("SUPABASE_SERVICE_ROLE_KEY") !== undefined,
+          GOOGLE_API_KEY: readRuntimeEnv("GOOGLE_API_KEY") !== undefined,
         },
       })
     );
