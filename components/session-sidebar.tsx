@@ -55,7 +55,7 @@ export function SessionSidebar({
 
   const fetchSessions = async () => {
     try {
-      const res = await fetch(`/api/session?userId=${userId}`);
+      const res = await fetch("/api/session");
       if (res.ok) {
         const data = await res.json();
         setSessions(data);

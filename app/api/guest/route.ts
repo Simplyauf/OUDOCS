@@ -1,10 +1,37 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
+import { GuestProfile, guestCookieOptions, resolveCaller, signGuestId } from "@/lib/auth";
 
 // Initialize Supabase Admin Client (Service Role) to bypass RLS for creation
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 const supabase = createClient(supabaseUrl, supabaseKey);
+
+function withGuestCookie(profile: GuestProfile) {
+  const res = NextResponse.json(profile);
+  res.cookies.set({ ...guestCookieOptions(), value: signGuestId(profile.id) });
+  return res;
+}
+
+export async function GET() {
+  const caller = await resolveCaller();
+
+  if (!caller || !caller.isGuest) {
+    return NextResponse.json({ error: "No guest session" }, { status: 401 });
+  }
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("id", caller.userId)
+    .maybeSingle();
+
+  if (!profile) {
+    return NextResponse.json({ error: "No guest session" }, { status: 401 });
+  }
+
+  return NextResponse.json(profile);
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -29,7 +56,7 @@ export async function POST(req: NextRequest) {
          .maybeSingle();
 
        if (existingGuest) {
-         return NextResponse.json(existingGuest);
+         return withGuestCookie(existingGuest);
        }
     }
 
@@ -73,7 +100,7 @@ export async function POST(req: NextRequest) {
 
     if (error) throw error;
 
-    return NextResponse.json(data);
+    return withGuestCookie(data);
   } catch (error: any) {
     console.error("Guest API Error:", error);
     return NextResponse.json({ error: "Internal Server Error", message: error.message }, { status: 500 });
