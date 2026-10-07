@@ -3,10 +3,11 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "eslint"
+    "dev": "node api.js && next dev",
+    "build": "node api.js && next build",
+    "start": "node api.js && next start",
+    "lint": "eslint",
+    "test:isolation": "node --env-file=.env.local --test tests/isolation.test.mjs"
   },
   "overrides": {
     "openai": "$openai"

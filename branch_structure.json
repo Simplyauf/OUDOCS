@@ -1,0 +1,18 @@
+{
+  "default_branch": "main",
+  "branches": [
+    "fix/session-ownership-enforcement",
+    "main",
+    "v0/simplyauf-58e26800"
+  ],
+  "parent": {
+    "fix/session-ownership-enforcement": "main",
+    "main": null,
+    "v0/simplyauf-58e26800": "main"
+  },
+  "order": [
+    "main",
+    "fix/session-ownership-enforcement",
+    "v0/simplyauf-58e26800"
+  ]
+}

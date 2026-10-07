@@ -1,4 +1,5 @@
 import { askQuestion } from "@/lib/rag";
+import { authErrorResponse, requireSessionAccess } from "@/lib/auth";
 import { NextRequest, NextResponse } from "next/server";
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import { createClient } from "@supabase/supabase-js";
@@ -9,26 +10,29 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 
 export async function POST(req: NextRequest) {
   try {
-    const { question, sessionId } = await req.json();
-    console.log("Asking question:", question, "Session:", sessionId);
+    const body = await req.json();
+    const { question } = body;
+
+    if (typeof question !== "string" || question.trim().length === 0) {
+      return NextResponse.json({ error: "question is required" }, { status: 400 });
+    }
+
+    const { sessionId } = await requireSessionAccess(body.sessionId);
 
     // Fetch recent history for context (Last 6 messages)
     let history: any[] = [];
-    if (sessionId) {
-      const { data: messages } = await supabase
-        .from("messages")
-        .select("role, content")
-        .eq("session_id", sessionId)
-        .order("created_at", { ascending: false }) // Get latest first
-        .limit(6);
-      
-      if (messages) {
-        history = messages.reverse(); // Flip back to chronological order
-      }
+    const { data: messages } = await supabase
+      .from("messages")
+      .select("role, content")
+      .eq("session_id", sessionId)
+      .order("created_at", { ascending: false }) // Get latest first
+      .limit(6);
+
+    if (messages) {
+      history = messages.reverse(); // Flip back to chronological order
     }
 
     const context = await askQuestion(question, sessionId, history);
-    console.log("Context retrieved:", context ? context.substring(0, 100) + "..." : "EMPTY");
 
     const model = new ChatGoogleGenerativeAI({
       model: "gemini-2.0-flash", 
@@ -57,18 +61,18 @@ ${question}
     const res = await model.invoke(prompt);
     const answer = res.content;
 
-    // Persist messages if sessionId is present
-    if (sessionId) {
-      await supabase.from("messages").insert([
-        { session_id: sessionId, role: "user", content: question },
-        { session_id: sessionId, role: "assistant", content: answer }
-      ]);
-    }
+    await supabase.from("messages").insert([
+      { session_id: sessionId, role: "user", content: question },
+      { session_id: sessionId, role: "assistant", content: answer }
+    ]);
 
     return NextResponse.json({
       answer: answer,
     });
   } catch (error: any) {
+    const authFailure = authErrorResponse(error);
+    if (authFailure) return authFailure;
+
     console.error("Chat error details:", error);
     const status = error.status === 429 || error.message?.includes("429") ? 429 : 500;
     return NextResponse.json(

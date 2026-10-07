@@ -83,7 +83,7 @@ export default function Home() {
       const savedSessionId = localStorage.getItem("oudocs_last_session_id");
 
       const loadInitialSession = async () => {
-        const res = await fetch(`/api/session?userId=${profile.id}`);
+        const res = await fetch("/api/session");
         if (res.ok) {
             const sessions = await res.json();
             if (sessions.length > 0) {
@@ -100,7 +100,7 @@ export default function Home() {
                     }
                 }
             } else {
-                createNewSession(profile.id);
+                createNewSession();
             }
         }
       };
@@ -175,7 +175,7 @@ export default function Home() {
     }
   };
 
-  const createNewSession = async (userId: string) => {
+  const createNewSession = async () => {
     if (isCreatingSession) return;
     setIsCreatingSession(true);
     
@@ -183,7 +183,7 @@ export default function Home() {
       const res = await fetch("/api/session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId, title: "New Analysis" }),
+        body: JSON.stringify({ title: "New Analysis" }),
       });
       
       if (res.ok) {
@@ -213,7 +213,7 @@ export default function Home() {
   const refreshActiveSession = async () => {
     if (!activeSession) return;
     try {
-      const res = await fetch(`/api/session?userId=${profile.id}`);
+      const res = await fetch("/api/session");
       if (res.ok) {
         const sessions = await res.json();
         const updated = sessions.find((s: Session) => s.id === activeSession.id);
@@ -465,7 +465,7 @@ export default function Home() {
               </div>
               
               <button 
-                onClick={() => profile && createNewSession(profile.id)}
+                onClick={() => profile && createNewSession()}
                 disabled={isCreatingSession}
                 className="p-2.5 rounded-xl bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-700 transition-all shadow-sm active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                 title="New Session"
@@ -496,7 +496,7 @@ export default function Home() {
             userId={profile.id}
             activeSessionId={activeSession?.id}
             onSelectSession={handleSelectSession}
-            onNewSession={() => createNewSession(profile.id)}
+            onNewSession={() => createNewSession()}
             isGuest={isGuest}
             signInWithGoogle={signInWithGoogle}
             activeDataInfo={activeDataInfo}
@@ -796,7 +796,7 @@ export default function Home() {
                      <div className="flex flex-col items-center">
                         <Loader2 className="h-8 w-8 animate-spin text-zinc-400 mb-4" />
                         <p className="text-zinc-500">Initializing Session...</p>
-                        <button onClick={() => profile && createNewSession(profile.id)} className="mt-4 text-xs text-indigo-500 underline">
+                        <button onClick={() => profile && createNewSession()} className="mt-4 text-xs text-indigo-500 underline">
                           Click to retry
                         </button>
                      </div>

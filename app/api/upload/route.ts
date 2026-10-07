@@ -1,6 +1,7 @@
 import { processPDF, processDocument, generateTitle } from "@/lib/rag";
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { authErrorResponse, requireSessionAccess } from "@/lib/auth";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -24,7 +25,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const sessionId = formData.get("sessionId") as string;
+    const { sessionId } = await requireSessionAccess(formData.get("sessionId"));
 
     // Validate file type
     const fileExtension = file.name.split('.').pop()?.toLowerCase();
@@ -77,86 +78,85 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (sessionId) {
-      // 2. Upload to Supabase Storage (for download/viewing)
-      const fileName = `${sessionId}-${file.name.replace(/[^a-zA-Z0-9.]/g, '_')}`;
-      
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('documents')
-        .upload(fileName, buffer, {
-          contentType: file.type || 'application/octet-stream',
-          upsert: true
-        });
-
-      if (uploadError) {
-        console.warn("Storage upload failed (bucket might be missing):", uploadError);
-        // We don't throw here so RAG still works, but download will fail.
-      }
-
-      console.log("Updating session metadata for ID:", sessionId);
-
-      // 3. Update session title and metadata
-      let displayTitle = file.name;
-      const docType = fileExtension.toUpperCase();
-      
-      // Force AI title for generic names
-      if (displayTitle.toLowerCase().includes('document') || 
-          displayTitle.toLowerCase().includes('resume') || 
-          displayTitle.length < 5) {
-        try {
-          console.log(`Generating AI Title for ${docType}...`);
-          const aiTitle = await generateTitle(result.textSnippet);
-          if (aiTitle && aiTitle !== "New Analysis" && !aiTitle.includes("Text snippet")) {
-            displayTitle = aiTitle;
-          }
-        } catch (e) {
-          console.error("AI Title generation failed, using filename:", e);
-        }
-      }
-      // Build metadata based on file type
-      const sessionMetadata: any = {
-        type: docType,
-        fileName: file.name,
-        storagePath: fileName,
-        storageError: !!uploadError
-      };
-
-      if (fileExtension === 'pdf') {
-        sessionMetadata.pageCount = result.metadata?.pageCount;
-      } else if (['docx', 'doc'].includes(fileExtension)) {
-        sessionMetadata.wordCount = result.metadata?.wordCount;
-        sessionMetadata.pageEstimate = result.metadata?.pageEstimate;
-      } else {
-        sessionMetadata.wordCount = result.metadata?.wordCount;
-        sessionMetadata.charCount = result.metadata?.charCount;
-      }
-
-      // Perform the update
-      const { data: updatedSession, error: updateError } = await supabase
-        .from("sessions")
-        .update({
-          title: displayTitle,
-          metadata: sessionMetadata
-        })
-        .eq("id", sessionId)
-        .select("*, documents(content, metadata), messages(*)")
-        .single();
-
-      if (updateError) {
-        console.error("Session Update Error:", updateError);
-        throw updateError;
-      }
-
-      console.log("Successfully updated session:", updatedSession?.id, "New Title:", updatedSession?.title);
-
-      return NextResponse.json({
-        ...result,
-        session: updatedSession
+    // 2. Upload to Supabase Storage (for download/viewing)
+    const fileName = `${sessionId}-${file.name.replace(/[^a-zA-Z0-9.]/g, '_')}`;
+    
+    const { data: uploadData, error: uploadError } = await supabase.storage
+      .from('documents')
+      .upload(fileName, buffer, {
+        contentType: file.type || 'application/octet-stream',
+        upsert: true
       });
+
+    if (uploadError) {
+      console.warn("Storage upload failed (bucket might be missing):", uploadError);
+      // We don't throw here so RAG still works, but download will fail.
     }
 
-    return NextResponse.json(result);
+    console.log("Updating session metadata for ID:", sessionId);
+
+    // 3. Update session title and metadata
+    let displayTitle = file.name;
+    const docType = fileExtension.toUpperCase();
+    
+    // Force AI title for generic names
+    if (displayTitle.toLowerCase().includes('document') || 
+        displayTitle.toLowerCase().includes('resume') || 
+        displayTitle.length < 5) {
+      try {
+        console.log(`Generating AI Title for ${docType}...`);
+        const aiTitle = await generateTitle(result.textSnippet);
+        if (aiTitle && aiTitle !== "New Analysis" && !aiTitle.includes("Text snippet")) {
+          displayTitle = aiTitle;
+        }
+      } catch (e) {
+        console.error("AI Title generation failed, using filename:", e);
+      }
+    }
+    // Build metadata based on file type
+    const sessionMetadata: any = {
+      type: docType,
+      fileName: file.name,
+      storagePath: fileName,
+      storageError: !!uploadError
+    };
+
+    if (fileExtension === 'pdf') {
+      sessionMetadata.pageCount = result.metadata?.pageCount;
+    } else if (['docx', 'doc'].includes(fileExtension)) {
+      sessionMetadata.wordCount = result.metadata?.wordCount;
+      sessionMetadata.pageEstimate = result.metadata?.pageEstimate;
+    } else {
+      sessionMetadata.wordCount = result.metadata?.wordCount;
+      sessionMetadata.charCount = result.metadata?.charCount;
+    }
+
+    // Perform the update
+    const { data: updatedSession, error: updateError } = await supabase
+      .from("sessions")
+      .update({
+        title: displayTitle,
+        metadata: sessionMetadata
+      })
+      .eq("id", sessionId)
+      .select("*, documents(content, metadata), messages(*)")
+      .single();
+
+    if (updateError) {
+      console.error("Session Update Error:", updateError);
+      throw updateError;
+    }
+
+    console.log("Successfully updated session:", updatedSession?.id, "New Title:", updatedSession?.title);
+
+    return NextResponse.json({
+      ...result,
+      session: updatedSession
+    });
   } catch (error: any) {
+    const authFailure = authErrorResponse(error);
+    if (authFailure) return authFailure;
+
     console.error("Upload error:", error);
     return NextResponse.json(
       { error: "Internal Server Error", message: error.message },

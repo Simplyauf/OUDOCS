@@ -37,7 +37,7 @@ async function extractTextFromDOCX(buffer: Buffer): Promise<string> {
 /**
  * Process any document type (PDF, DOCX, TXT, MD, RTF)
  */
-export async function processDocument(buffer: Buffer, fileType: string, sessionId?: string, fileName: string = "Document") {
+export async function processDocument(buffer: Buffer, fileType: string, sessionId: string, fileName: string = "Document") {
   try {
     let text = "";
     let metadata: any = { source_name: fileName, source_type: fileType.toLowerCase() };
@@ -83,15 +83,12 @@ export async function processDocument(buffer: Buffer, fileType: string, sessionI
     
     const docs = await splitter.createDocuments([text]);
 
-    // Add sessionId to metadata for every chunk
-    if (sessionId) {
-      docs.forEach((doc, index) => {
-        doc.metadata.session_id = sessionId;
-        doc.metadata.source_name = fileName;
-        doc.metadata.source_type = fileType.toLowerCase();
-        doc.metadata.chunk_index = index; // Global Context Indexing
-      });
-    }
+    docs.forEach((doc, index) => {
+      doc.metadata.session_id = sessionId;
+      doc.metadata.source_name = fileName;
+      doc.metadata.source_type = fileType.toLowerCase();
+      doc.metadata.chunk_index = index;
+    });
 
     // Store in vector database
     const embeddings = new GoogleGenerativeAIEmbeddings({
@@ -118,7 +115,7 @@ export async function processDocument(buffer: Buffer, fileType: string, sessionI
   }
 }
 
-export async function processPDF(buffer: Buffer, sessionId?: string, fileName: string = "Document.pdf") {
+export async function processPDF(buffer: Buffer, sessionId: string, fileName: string = "Document.pdf") {
   try {
     // 1. Extract Text
     const data = new Uint8Array(buffer);
@@ -139,15 +136,12 @@ export async function processPDF(buffer: Buffer, sessionId?: string, fileName: s
     
     const docs = await splitter.createDocuments([text]);
 
-    // Add sessionId to metadata for every chunk explicitly
-    if (sessionId) {
-      docs.forEach((doc, index) => {
-        doc.metadata.session_id = sessionId;
-        doc.metadata.source_name = fileName;
-        doc.metadata.source_type = 'pdf';
-        doc.metadata.chunk_index = index; // Global Context Indexing
-      });
-    }
+    docs.forEach((doc, index) => {
+      doc.metadata.session_id = sessionId;
+      doc.metadata.source_name = fileName;
+      doc.metadata.source_type = 'pdf';
+      doc.metadata.chunk_index = index;
+    });
 
     // 3. Generate Embeddings via Google Gemini
     const embeddings = new GoogleGenerativeAIEmbeddings({
@@ -169,7 +163,7 @@ export async function processPDF(buffer: Buffer, sessionId?: string, fileName: s
   }
 }
 
-export async function processText(text: string, sessionId?: string) {
+export async function processText(text: string, sessionId: string) {
   try {
     if (!text || text.trim().length === 0) {
       throw new Error("No text provided.");
@@ -183,14 +177,12 @@ export async function processText(text: string, sessionId?: string) {
     const docs = await splitter.createDocuments([text]);
 
 
-    if (sessionId) {
-      docs.forEach((doc, index) => {
-        doc.metadata.session_id = sessionId;
-        doc.metadata.source_name = "Pasted Text";
-        doc.metadata.source_type = "text";
-        doc.metadata.chunk_index = index; // Global Context Indexing
-      });
-    }
+    docs.forEach((doc, index) => {
+      doc.metadata.session_id = sessionId;
+      doc.metadata.source_name = "Pasted Text";
+      doc.metadata.source_type = "text";
+      doc.metadata.chunk_index = index;
+    });
 
     const embeddings = new GoogleGenerativeAIEmbeddings({
       apiKey: process.env.GOOGLE_API_KEY,
@@ -210,8 +202,11 @@ export async function processText(text: string, sessionId?: string) {
   }
 }
 
-export async function askQuestion(question: string, sessionId?: string, history: any[] = []) {
-  // 1. Contextualize the question if history exists
+export async function askQuestion(question: string, sessionId: string, history: any[] = []) {
+  if (!sessionId || typeof sessionId !== "string") {
+    throw new Error("askQuestion requires a sessionId");
+  }
+
   let searchParam = question;
   
   if (history.length > 0) {
@@ -260,32 +255,29 @@ Standalone Question:`;
     queryName: "match_documents",
   });
 
-  const filter = sessionId ? { session_id: sessionId } : undefined;
-  
-  // Use the refined searchParam instead of the raw question
-  const results = await vectorStore.similaritySearch(searchParam, 15, filter);
+  const results = await vectorStore.similaritySearch(searchParam, 15, {
+    session_id: sessionId,
+  });
 
   // --- GLOBAL CONTEXT INJECTION ---
   // Always fetch the first 3 chunks (Title, Intro, Abstract) to ensure high-level context
   let globalContextDocs: Document[] = [];
-  if (sessionId) {
-      try {
-        const { data: globalChunks, error } = await client
-            .from('documents')
-            .select('content, metadata')
-            .eq('metadata->>session_id', sessionId)
-            .lt('metadata->>chunk_index', 3) // Get first 3 chunks (0, 1, 2)
-            .order('metadata->>chunk_index', { ascending: true });
+  try {
+    const { data: globalChunks, error } = await client
+        .from('documents')
+        .select('content, metadata')
+        .eq('session_id', sessionId)
+        .lt('metadata->>chunk_index', 3)
+        .order('metadata->>chunk_index', { ascending: true });
 
-        if (globalChunks && !error) {
-            globalContextDocs = globalChunks.map(chunk => new Document({
-                pageContent: chunk.content,
-                metadata: chunk.metadata
-            }));
-        }
-      } catch (e) {
-          console.warn("Global context fetch failed (legacy docs?):", e);
-      }
+    if (globalChunks && !error) {
+        globalContextDocs = globalChunks.map(chunk => new Document({
+            pageContent: chunk.content,
+            metadata: chunk.metadata
+        }));
+    }
+  } catch (e) {
+      console.warn("Global context fetch failed:", e);
   }
 
   // Combine & Deduplicate

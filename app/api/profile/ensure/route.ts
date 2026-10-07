@@ -1,17 +1,42 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
+import { cookies } from "next/headers";
+import { GUEST_COOKIE, authErrorResponse, requireCaller, verifySignedGuestCookie } from "@/lib/auth";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
+async function resolveMergeableGuestId(cookieValue: string | undefined): Promise<string | null> {
+  if (!cookieValue) return null;
+
+  const profileId = verifySignedGuestCookie(cookieValue);
+  if (!profileId) return null;
+
+  const { data: guestProfile } = await supabase
+    .from("profiles")
+    .select("id, is_guest")
+    .eq("id", profileId)
+    .maybeSingle();
+
+  if (!guestProfile || !guestProfile.is_guest) return null;
+
+  return guestProfile.id;
+}
+
 export async function POST(req: NextRequest) {
   try {
-    const { userId, email, fullName, guestId } = await req.json();
+    const caller = await requireCaller();
 
-    if (!userId) {
-      return NextResponse.json({ error: "User ID is required" }, { status: 400 });
+    if (caller.isGuest) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
+
+    const { email, fullName } = await req.json();
+    const userId = caller.userId;
+
+    const cookieStore = await cookies();
+    const guestId = await resolveMergeableGuestId(cookieStore.get(GUEST_COOKIE)?.value);
 
     // 1. Upsert Profile (Idempotent creation)
     const { data: profile, error: upsertError } = await supabase
@@ -32,9 +57,11 @@ export async function POST(req: NextRequest) {
 
     if (upsertError) throw upsertError;
 
+    let mergedGuest = false;
+
     // 2. Merge Logic: Transfer guest sessions to this account
     if (guestId && guestId !== userId) {
-      console.log(`Merging guest ${guestId} into auth user ${userId}`);
+      mergedGuest = true;
       
       // Transfer sessions
       const { error: sessionError } = await supabase
@@ -59,8 +86,15 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    return NextResponse.json(profile);
+    const res = NextResponse.json(profile);
+    if (mergedGuest) {
+      res.cookies.delete(GUEST_COOKIE);
+    }
+    return res;
   } catch (error: any) {
+    const authFailure = authErrorResponse(error);
+    if (authFailure) return authFailure;
+
     console.error("Profile Ensure Error:", error);
     return NextResponse.json({ error: "Internal Server Error", message: error.message }, { status: 500 });
   }
