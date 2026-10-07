@@ -40,6 +40,9 @@ function guestSecret(): string {
         length: secret?.length ?? 0,
         required: 32,
         vercelEnv: process.env.VERCEL_ENV ?? "unset",
+        matchingKeys: Object.keys(process.env)
+          .filter((k) => /guest|secret/i.test(k))
+          .map((k) => `${JSON.stringify(k)} len=${process.env[k]?.length ?? 0}`),
         sawOtherServerVars: {
           SUPABASE_SERVICE_ROLE_KEY: readRuntimeEnv("SUPABASE_SERVICE_ROLE_KEY") !== undefined,
           GOOGLE_API_KEY: readRuntimeEnv("GOOGLE_API_KEY") !== undefined,
