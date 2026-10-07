@@ -16,6 +16,25 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+type GuestProfile = { id: string; full_name: string; is_guest: boolean };
+
+async function loadGuestProfile(): Promise<GuestProfile | null> {
+  const res = await fetch("/api/guest");
+  if (res.ok) return res.json();
+
+  const savedName = localStorage.getItem("oudocs_user_name");
+  if (!savedName) return null;
+
+  const { getDeviceFingerprint } = await import("@/lib/fingerprint");
+  const resumed = await fetch("/api/guest", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name: savedName, deviceFingerprint: await getDeviceFingerprint() }),
+  });
+
+  return resumed.ok ? resumed.json() : null;
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<any | null>(null);
@@ -25,19 +44,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const handleSession = async (session: Session | null) => {
     if (session?.user) {
-      // Check for guestId before we clear it
-      const guestId = localStorage.getItem("oudocs_user_id");
-
       // Ensure Profile exists and Merge Guest data
       try {
         const res = await fetch("/api/profile/ensure", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-                userId: session.user.id,
                 email: session.user.email,
                 fullName: session.user.user_metadata?.full_name || session.user.email?.split("@")[0],
-                guestId: guestId // Pass to merge
             })
         });
         const fullProfile = await res.json();
@@ -53,19 +67,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.error("Failed to ensure profile", err);
       }
     } else {
-      // Check for Guest in LocalStorage
-      const guestId = localStorage.getItem("oudocs_user_id");
-      const guestName = localStorage.getItem("oudocs_user_name");
+      const guestProfile = await loadGuestProfile();
 
-      if (guestId && guestName) {
+      if (guestProfile) {
         setUser(null);
         setIsGuest(true);
-        setProfile({
-          id: guestId,
-          full_name: guestName,
-          is_guest: true
-        });
+        setProfile(guestProfile);
+        localStorage.setItem("oudocs_user_id", guestProfile.id);
+        localStorage.setItem("oudocs_user_name", guestProfile.full_name);
       } else {
+        localStorage.removeItem("oudocs_user_id");
+        localStorage.removeItem("oudocs_user_name");
         setUser(null);
         setIsGuest(false);
         setProfile(null);

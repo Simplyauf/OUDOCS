@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test:isolation": "node --env-file=.env.local --test tests/isolation.test.mjs"
   },
   "overrides": {
     "openai": "$openai"
